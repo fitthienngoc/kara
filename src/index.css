@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+body {
+  overscroll-behavior-y: auto;
+  overscroll-behavior-x: auto;
+  overflow-y: hidden;
+  @apply h-screen;
+}

@@ -7,13 +7,14 @@
   "private": true,
   "dependencies": {
     "@remotion/cli": "4.0.314",
+    "@remotion/player": "^4.0.314",
+    "@remotion/tailwind-v4": "4.0.314",
     "@remotion/zod-types": "4.0.314",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "remotion": "4.0.314",
-    "zod": "3.22.3",
-    "@remotion/tailwind-v4": "4.0.314",
-    "tailwindcss": "4.0.0"
+    "tailwindcss": "4.0.0",
+    "zod": "3.22.3"
   },
   "devDependencies": {
     "@remotion/eslint-config-flat": "4.0.314",
@@ -25,6 +26,7 @@
   },
   "scripts": {
     "dev": "remotion studio",
+    "editor": "remotion studio --props='{\"editor\":true}'",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"
