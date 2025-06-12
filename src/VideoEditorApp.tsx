@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Player } from "@remotion/player";
+import { Player, PlayerRef } from "@remotion/player";
 import { VideoEditor } from "./VideoEditor/VideoEditor";
 import {
   DEFAULT_ACTIVE_COLOR,
@@ -14,6 +14,8 @@ import { BackgroundSettings } from "./VideoEditor/components/BackgroundSettings"
 import { AudioSettings } from "./VideoEditor/components/AudioSettings";
 import { VideoSettings } from "./VideoEditor/components/VideoSettings";
 import { TextSettings } from "./VideoEditor/components/TextSettings";
+import { LyricsEditor } from "./VideoEditor/components/LyricsEditor";
+import { Timeline } from "./VideoEditor/components/Timeline";
 
 // Danh sách font hỗ trợ tiếng Việt tốt
 const VIETNAMESE_FONTS = [
@@ -41,7 +43,8 @@ export const VideoEditorApp: React.FC = () => {
   const [backgroundSrc, setBackgroundSrc] = useState<string>("");
   const [backgroundColor, setBackgroundColor] = useState<string>("#121212");
   const [audioSrc, setAudioSrc] = useState<string>("");
-  const [karaokeLines] = useState<KaraokeLine[]>(SAMPLE_KARAOKE_LINES);
+  const [karaokeLines, setKaraokeLines] =
+    useState<KaraokeLine[]>(SAMPLE_KARAOKE_LINES);
   const [activeWordColor, setActiveWordColor] =
     useState<string>(DEFAULT_ACTIVE_COLOR);
   const [inactiveWordColor, setInactiveWordColor] = useState<string>(
@@ -51,10 +54,20 @@ export const VideoEditorApp: React.FC = () => {
   const [fontSize, setFontSize] = useState<number>(DEFAULT_FONT_SIZE);
   const [fps, setFps] = useState<number>(DEFAULT_FPS);
   const [durationInFrames, setDurationInFrames] = useState<number>(300);
-  // Refs cho input file - cách 1
+  
+  // State để theo dõi vị trí hiện tại
+  const [currentFrame, setCurrentFrame] = useState<number>(0);
+
+  // State để kiểm soát việc hiển thị các phần cấu hình cơ bản
+  const [showBasicSettings, setShowBasicSettings] = useState<boolean>(true);
+  // State để kiểm soát hiển thị timeline
+  const [showTimeline, setShowTimeline] = useState<boolean>(true);
+
+  // Refs cho input file và player
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const playerRef = useRef<PlayerRef>(null);
 
   // Tải các font Google Fonts
   useEffect(() => {
@@ -71,75 +84,133 @@ export const VideoEditorApp: React.FC = () => {
     };
   }, []);
 
-  // Không cần giải phóng blob URL nữa vì chúng ta đang sử dụng data URL
-  // useEffect(() => {
-  //   return () => {
-  //     if (audioSrc && audioSrc.startsWith("blob:")) {
-  //       URL.revokeObjectURL(audioSrc);
-  //     }
-  //     if (backgroundSrc && backgroundSrc.startsWith("blob:")) {
-  //       URL.revokeObjectURL(backgroundSrc);
-  //     }
-  //   };
-  // }, [audioSrc, backgroundSrc]);
+  // Toggle hiển thị cấu hình cơ bản
+  const toggleBasicSettings = () => {
+    setShowBasicSettings(!showBasicSettings);
+  };
+  
+  // Toggle hiển thị timeline
+  const toggleTimeline = () => {
+    setShowTimeline(!showTimeline);
+  };
+
+  // Cập nhật durationInFrames dựa trên audio
+  useEffect(() => {
+    if (audioSrc) {
+      const audio = new Audio(audioSrc);
+      audio.onloadedmetadata = () => {
+        // Cập nhật durationInFrames dựa trên thời lượng audio
+        const newDurationInFrames = Math.ceil(audio.duration * fps);
+        setDurationInFrames(newDurationInFrames);
+      };
+    }
+  }, [audioSrc, fps]);
+  
+  // Xử lý khi Timeline thay đổi thời gian
+  const handleTimelineTimeChange = (timeInSeconds: number) => {
+    // Chuyển đổi thời gian thành frame
+    const frame = Math.round(timeInSeconds * fps);
+    setCurrentFrame(frame);
+    
+    // Cập nhật vị trí của player
+    if (playerRef.current) {
+      playerRef.current.seekTo(frame);
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar cho các tùy chọn */}
-      <div className="w-80 bg-white p-4 overflow-y-auto shadow-md">
-        <h2 className="text-xl font-bold mb-4">Video Editor</h2>
+    <div className="flex h-screen w-screen bg-gray-100 overflow-hidden">
+      {/* Sidebar cho các tùy chọn - đảm bảo chiều rộng cố định */}
+      <div className="w-[500px] min-w-[500px] bg-white p-4 overflow-y-auto shadow-md">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Video Editor</h2>
+          <button
+            className={`px-3 py-1 rounded text-sm ${showBasicSettings ? "bg-gray-200" : "bg-blue-500 text-white"}`}
+            onClick={toggleBasicSettings}
+          >
+            {showBasicSettings ? "Chỉ hiện Lyrics" : "Hiện đầy đủ"}
+          </button>
+        </div>
 
-        {/* Phần nền */}
-        <BackgroundSettings
-          backgroundType={backgroundType}
-          setBackgroundType={setBackgroundType}
-          backgroundColor={backgroundColor}
-          setBackgroundColor={setBackgroundColor}
-          backgroundSrc={backgroundSrc}
-          setBackgroundSrc={setBackgroundSrc}
-          imageInputRef={imageInputRef}
-          videoInputRef={videoInputRef}
-        />
-        {/* Phần âm thanh */}
-        <AudioSettings
-          audioSrc={audioSrc}
-          setAudioSrc={setAudioSrc}
-          audioInputRef={audioInputRef}
-        />
-        {/* Phần FPS */}
-        <VideoSettings
-          fps={fps}
-          setFps={setFps}
-          durationInFrames={durationInFrames}
-          setDurationInFrames={setDurationInFrames}
-        />
+        {/* Phần cấu hình cơ bản - có thể thu gọn */}
+        {showBasicSettings && (
+          <>
+            {/* Phần nền */}
+            <BackgroundSettings
+              backgroundType={backgroundType}
+              setBackgroundType={setBackgroundType}
+              backgroundColor={backgroundColor}
+              setBackgroundColor={setBackgroundColor}
+              backgroundSrc={backgroundSrc}
+              setBackgroundSrc={setBackgroundSrc}
+              imageInputRef={imageInputRef}
+              videoInputRef={videoInputRef}
+            />
 
-        {/* Phần font và màu sắc */}
-        <TextSettings
-          activeWordColor={activeWordColor}
-          setActiveWordColor={setActiveWordColor}
-          inactiveWordColor={inactiveWordColor}
-          setInactiveWordColor={setInactiveWordColor}
-          fontFamily={fontFamily}
-          setFontFamily={setFontFamily}
-          fontSize={fontSize}
-          setFontSize={setFontSize}
-          fontOptions={VIETNAMESE_FONTS}
-        />
+            {/* Phần âm thanh */}
+            <AudioSettings
+              audioSrc={audioSrc}
+              setAudioSrc={setAudioSrc}
+              audioInputRef={audioInputRef}
+            />
 
-        {/* Phần karaoke (đơn giản) */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Karaoke Lyrics</h3>
-          <div className="text-sm text-gray-600">
-            Using sample lyrics. Lyrics editor coming soon.
-          </div>
+            {/* Phần FPS */}
+            <VideoSettings
+              fps={fps}
+              setFps={setFps}
+              durationInFrames={durationInFrames}
+              setDurationInFrames={setDurationInFrames}
+            />
+
+            {/* Phần font và màu sắc */}
+            <TextSettings
+              activeWordColor={activeWordColor}
+              setActiveWordColor={setActiveWordColor}
+              inactiveWordColor={inactiveWordColor}
+              setInactiveWordColor={setInactiveWordColor}
+              fontFamily={fontFamily}
+              setFontFamily={setFontFamily}
+              fontSize={fontSize}
+              setFontSize={setFontSize}
+              fontOptions={VIETNAMESE_FONTS}
+            />
+          </>
+        )}
+
+        {/* Phần karaoke - luôn hiển thị */}
+        <div className={showBasicSettings ? "" : "mt-4"}>
+          <LyricsEditor
+            karaokeLines={karaokeLines}
+            setKaraokeLines={setKaraokeLines}
+            fps={fps}
+          />
         </div>
       </div>
 
-      {/* Phần xem trước video */}
-      <div className="flex-1 p-4 flex flex-col">
-        <h2 className="text-xl font-bold mb-4">Preview</h2>
-        <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
+      {/* Phần xem trước video và timeline */}
+      <div className="flex-1 p-4 flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Preview</h2>
+          {audioSrc && (
+            <button
+              className="px-3 py-1 rounded text-sm bg-blue-500 text-white"
+              onClick={toggleTimeline}
+            >
+              {showTimeline ? "Ẩn Timeline" : "Hiện Timeline"}
+            </button>
+          )}
+        </div>
+
+        {/* Phần preview - điều chỉnh kích thước dựa vào timeline */}
+        <div
+          className="bg-gray-800 rounded-lg overflow-hidden relative"
+          style={{
+            flex: showTimeline && audioSrc ? "1 0 60%" : "1",
+            minHeight: "300px",
+          }}
+        >
           <Player
+            ref={playerRef}
             component={VideoEditor}
             durationInFrames={durationInFrames}
             fps={fps}
@@ -149,7 +220,8 @@ export const VideoEditorApp: React.FC = () => {
               width: "100%",
               height: "100%",
             }}
-            controls
+            // controls
+            initialFrame={currentFrame}
             inputProps={{
               backgroundType,
               backgroundSrc,
@@ -165,16 +237,19 @@ export const VideoEditorApp: React.FC = () => {
           />
         </div>
 
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600 mb-2">
-            This is a preview only. To render the final video, use the Remotion
-            CLI.
-          </p>
-          <code className="bg-gray-100 p-2 rounded text-sm">
-            yarn remotion render src/index.ts KaraokeVideoEditor{fps}FPS
-            out/video.mp4
-          </code>
-        </div>
+        {/* Timeline Component - có thể ẩn/hiện */}
+        {audioSrc && showTimeline && (
+          <div className="mt-4 overflow-hidden" style={{ maxHeight: "40%" }}>
+            <Timeline
+              karaokeLines={karaokeLines}
+              setKaraokeLines={setKaraokeLines}
+              fps={fps}
+              durationInFrames={durationInFrames}
+              audioSrc={audioSrc}
+              onTimeChange={handleTimelineTimeChange}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

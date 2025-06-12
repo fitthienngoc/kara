@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame } from "remotion";
+import { useCurrentFrame, interpolate } from "remotion";
 import { KaraokeLine } from "./constants";
 
 interface KaraokeSubtitleProps {
@@ -36,16 +36,46 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
       {currentLines.map((line, lineIndex) => (
         <div key={lineIndex} className="mb-2.5 w-full flex flex-wrap justify-center">
           {line.words.map((word, wordIndex) => {
-            // Xác định xem từ hiện tại có đang được hát hay không
-            const isActive = frame >= word.startTime && frame <= word.endTime;
-            
+            // Sử dụng interpolate để làm mượt chuyển động
+            const progress = interpolate(
+              frame,
+              [word.startTime, word.endTime],
+              [0, 100],
+              {
+                extrapolateLeft: 'clamp',
+                extrapolateRight: 'clamp'
+              }
+            );
+
             return (
               <span 
                 key={wordIndex} 
-                className="mr-2 inline-block"
-                style={{ color: isActive ? activeWordColor : inactiveWordColor }}
+                className="mr-2 inline-block relative"
               >
-                {word.word}
+                {/* Lớp chữ không active ở dưới */}
+                <span 
+                  style={{ 
+                    color: inactiveWordColor,
+                    position: 'relative',
+                  }}
+                >
+                  {word.word}
+                </span>
+                
+                {/* Lớp chữ active ở trên, được clip theo tiến độ */}
+                <span 
+                  style={{
+                    color: activeWordColor,
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    clipPath: `inset(0 ${100 - progress}% 0 0)`,
+                    WebkitClipPath: `inset(0 ${100 - progress}% 0 0)`,
+                    // Loại bỏ transition để Remotion kiểm soát hoàn toàn việc chuyển frame
+                  }}
+                >
+                  {word.word}
+                </span>
               </span>
             );
           })}

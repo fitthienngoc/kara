@@ -10,6 +10,7 @@
     "@remotion/player": "^4.0.314",
     "@remotion/tailwind-v4": "4.0.314",
     "@remotion/zod-types": "4.0.314",
+    "clsx": "^2.1.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "remotion": "4.0.314",
