@@ -23,18 +23,7 @@ export const VideoEditorApp: React.FC = () => {
   const [audioSrc, setAudioSrc] = useState<string>("");
   const [karaokeLines, setKaraokeLines] =
     useState<KaraokeLine[]>(SAMPLE_KARAOKE_LINES);
-  // const [activeWordColor, setActiveWordColor] =
-  //   useState<string>(DEFAULT_ACTIVE_COLOR);
-  // const [inactiveWordColor, setInactiveWordColor] = useState<string>(
-  //   DEFAULT_INACTIVE_COLOR,
-  // );
-  // const [fontFamily, setFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
-  // const [fontSize, setFontSize] = useState<number>(DEFAULT_FONT_SIZE);
-  // const [fontWeight, setFontWeight] = useState<string>(DEFAULT_FONT_WEIGHT);
-  // const [textStroke, setTextStroke] = useState<string>(DEFAULT_TEXT_STROKE);
-  // const [textStrokeColor, setTextStrokeColor] = useState<string>(
-  //   DEFAULT_TEXT_STROKE_COLOR,
-  // );
+
   const [fps, setFps] = useState<number>(DEFAULT_FPS);
   const [durationInFrames, setDurationInFrames] = useState<number>(300);
 
@@ -143,25 +132,6 @@ export const VideoEditorApp: React.FC = () => {
               durationInFrames={durationInFrames}
               setDurationInFrames={setDurationInFrames}
             />
-
-            {/* Phần font và màu sắc */}
-            {/* <TextSettings
-              activeWordColor={activeWordColor}
-              setActiveWordColor={setActiveWordColor}
-              inactiveWordColor={inactiveWordColor}
-              setInactiveWordColor={setInactiveWordColor}
-              fontFamily={fontFamily}
-              setFontFamily={setFontFamily}
-              fontSize={fontSize}
-              setFontSize={setFontSize}
-              fontWeight={fontWeight}
-              setFontWeight={setFontWeight}
-              textStroke={textStroke}
-              setTextStroke={setTextStroke}
-              textStrokeColor={textStrokeColor}
-              setTextStrokeColor={setTextStrokeColor}
-              fontOptions={VIETNAMESE_FONTS}
-            /> */}
           </>
         )}
 
@@ -217,13 +187,7 @@ export const VideoEditorApp: React.FC = () => {
               backgroundColor,
               audioSrc,
               karaokeLines,
-              // activeWordColor,
-              // inactiveWordColor,
-              // fontFamily,
-              // fontSize,
-              // fontWeight,
-              // textStroke,
-              // textStrokeColor,
+
               fps,
             }}
           />

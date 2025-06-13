@@ -14,25 +14,9 @@ import { KaraokeLineWithStyle, TextStyle } from "./types";
 
 interface KaraokeSubtitleProps {
   lines: KaraokeLine[];
-  // activeWordColor: string;
-  // inactiveWordColor: string;
-  // fontFamily: string;
-  // fontSize: number;
-  // fontWeight: string;
-  // textStroke?: string;
-  // textStrokeColor?: string;
 }
 
-export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
-  lines,
-  // activeWordColor: defaultActiveColor,
-  // inactiveWordColor: defaultInactiveColor,
-  // fontFamily: defaultFontFamily,
-  // fontSize: defaultFontSize,
-  // fontWeight: defaultFontWeight,
-  // textStroke: defaultTextStroke = "0px",
-  // textStrokeColor: defaultTextStrokeColor = "#000000",
-}) => {
+export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({ lines }) => {
   const frame = useCurrentFrame();
   // Thời gian hiển thị trước (tính bằng frames) - mặc định là 3 giây (90 frames ở 30fps)
   const previewFrames = 90;
@@ -181,7 +165,7 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
     <>
       <style>{createKaraokeStyles()}</style>
       <div
-        className="absolute bottom-[120px] w-full flex flex-col items-center justify-center px-5"
+        className="absolute h-full w-full flex flex-col items-center justify-center px-5"
         style={{
           fontFamily: DEFAULT_FONT_FAMILY,
           fontSize: DEFAULT_FONT_SIZE,

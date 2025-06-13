@@ -115,13 +115,11 @@ export const Timeline: React.FC<TimelineProps> = ({
   const rows = distributeLinesToRows();
 
   return (
-    <div className="mt-4 bg-gray-900 p-4 rounded-lg">
-      <h3 className="text-white font-semibold mb-2">Timeline</h3>
-
+    <div className="mt-2 bg-gray-900 p-2 rounded-lg">
       {/* Controls */}
-      <div className="flex items-center mb-4">
+      <div className="flex items-center mb-2 text-xs">
         <button
-          className={`px-3 py-1 rounded mr-2 flex items-center justify-center transition-colors ${
+          className={`px-1 py-0.5 rounded mr-1 flex items-center justify-center transition-colors text-[10px] ${
             isPlaying
               ? "bg-red-500 hover:bg-red-600"
               : "bg-blue-500 hover:bg-blue-600"
@@ -132,7 +130,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             <>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
+                className="h-3 w-3 mr-1"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -148,7 +146,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             <>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
+                className="h-3 w-3 mr-1"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -163,7 +161,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           )}
         </button>
 
-        <div className="text-white mr-4 font-mono">
+        <div className="text-white mr-2 font-mono text-[10px]">
           {Math.floor(currentTime / 60)}:
           {Math.floor(currentTime % 60)
             .toString()
@@ -174,8 +172,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             .padStart(2, "0")}
         </div>
 
-        <div className="flex items-center mr-4">
-          <span className="text-white mr-2">Zoom:</span>
+        <div className="flex items-center mr-2">
           <input
             type="range"
             min="0.5"
@@ -183,9 +180,9 @@ export const Timeline: React.FC<TimelineProps> = ({
             step="0.1"
             value={zoom}
             onChange={handleZoomChange}
-            className="w-32"
+            className="w-20"
           />
-          <span className="text-white ml-1">{zoom.toFixed(1)}x</span>
+          <span className="text-white ml-1 text-[10px]">{zoom.toFixed(1)}x</span>
         </div>
       </div>
 
@@ -199,45 +196,46 @@ export const Timeline: React.FC<TimelineProps> = ({
       {/* Timeline container */}
       <div
         className="relative overflow-x-auto"
-        style={{ height: maxRows * 40 + 120 }} // Chiều cao cố định dựa trên số dòng tối đa
+        style={{ height: maxRows * 30 + 80 }} // Chiều cao cố định dựa trên số dòng tối đa, giảm từ 120 xuống 80
       >
         {/* Playhead - Cải thiện animation */}
         <div
           className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 cursor-ew-resize transition-all duration-100"
           style={{
             left: timeToPosition(currentTime),
-            boxShadow: isPlaying ? "0 0 8px 1px rgba(255, 0, 0, 0.6)" : "none",
+            boxShadow: isPlaying ? "0 0 6px 1px rgba(255, 0, 0, 0.6)" : "none",
             transition: playheadDragging ? "none" : "left 0.1s ease-out",
+            height: 'calc(100% - 40px)'
           }}
           onMouseDown={handlePlayheadMouseDown}
         >
           <div
-            className={`absolute w-4 h-4 bg-red-500 rounded-full -left-2 -top-2 transition-transform ${
+            className={`absolute w-3 h-3 bg-red-500 rounded-full -left-1.5 -top-1.5 transition-transform ${
               isPlaying ? "animate-pulse" : ""
             }`}
             style={{
-              boxShadow: "0 0 5px 2px rgba(255, 0, 0, 0.4)",
+              boxShadow: "0 0 4px 1.5px rgba(255, 0, 0, 0.4)",
               transform: playheadDragging ? "scale(1.2)" : "scale(1)",
             }}
           ></div>
         </div>
 
         {/* Time markers */}
-        <div className="h-6 bg-gray-800 sticky top-0 z-10 flex">
+        <div className="h-4 bg-gray-800 sticky top-0 z-10 flex">
           {Array.from({ length: Math.ceil(totalDuration) + 1 }).map((_, i) => (
             <div
               key={i}
               className="absolute flex flex-col items-center"
               style={{ left: timeToPosition(i) }}
             >
-              <div className="h-2 w-1 bg-gray-400"></div>
-              <div className="text-xs text-gray-400">{i}s</div>
+              <div className="h-2 w-0.5 bg-gray-400"></div>
+              <div className="text-[10px] text-gray-400">{i}s</div>
             </div>
           ))}
         </div>
 
         {/* Waveform */}
-        <div className="relative h-20 bg-gray-800 border-t border-gray-700">
+        <div className="relative h-8 bg-gray-800 border-t border-gray-700">
           <canvas
             ref={canvasRef}
             className="absolute top-0 left-0 h-full"
@@ -265,7 +263,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 <React.Fragment key={lineIndex}>
                   {/* Line block */}
                   <div
-                    className="absolute h-6 mt-2 bg-blue-800 rounded opacity-70 cursor-move flex items-center px-1 text-xs text-white overflow-hidden"
+                    className="absolute h-8 mt-1 bg-blue-800 rounded opacity-70 cursor-move flex items-end justify-center px-0.5 text-[10px] text-white overflow-hidden"
                     style={{
                       left: timeToPosition(frameToTime(line.startTime)),
                       width: timeToPosition(
@@ -282,7 +280,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                   {/* Line start handle */}
                   <div
-                    className="absolute h-6 w-2 mt-2 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                    className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
                     style={{
                       left: timeToPosition(frameToTime(line.startTime)),
                     }}
@@ -294,7 +292,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                   {/* Line end handle */}
                   <div
-                    className="absolute h-6 w-2 mt-2 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                    className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
                     style={{
                       left: timeToPosition(frameToTime(line.endTime)),
                     }}
@@ -308,7 +306,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   {line.words.map((word, wordIndex) => (
                     <div
                       key={wordIndex}
-                      className="absolute h-4 mt-3 bg-green-600 rounded opacity-80 cursor-move flex items-center justify-center text-xs text-white overflow-hidden hover:opacity-100 transition-opacity"
+                      className="absolute h-5 mt-1 bg-green-600 rounded opacity-80 cursor-move flex items-center justify-center text-[10px] text-white overflow-hidden hover:opacity-100 transition-opacity"
                       style={{
                         left: timeToPosition(frameToTime(word.startTime)),
                         width: timeToPosition(
@@ -324,7 +322,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                       {/* Word start handle */}
                       <div
-                        className="absolute left-0 top-0 bottom-0 w-1 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                        className="absolute left-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           handleMouseDown(e, "word", lineIndex, wordIndex, "start");
@@ -333,7 +331,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                       {/* Word end handle */}
                       <div
-                        className="absolute right-0 top-0 bottom-0 w-1 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                        className="absolute right-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           handleMouseDown(e, "word", lineIndex, wordIndex, "end");
@@ -346,11 +344,6 @@ export const Timeline: React.FC<TimelineProps> = ({
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="mt-2 text-xs text-gray-400">
-        Kéo các khối để di chuyển dòng/từ. Kéo cạnh để điều chỉnh thời gian bắt
-        đầu/kết thúc.
       </div>
     </div>
   );
