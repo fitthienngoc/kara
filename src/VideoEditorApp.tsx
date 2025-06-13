@@ -1,39 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Player, PlayerRef } from "@remotion/player";
 import { VideoEditor } from "./VideoEditor/VideoEditor";
-import {
-  DEFAULT_ACTIVE_COLOR,
-  DEFAULT_INACTIVE_COLOR,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
-  SAMPLE_KARAOKE_LINES,
-  DEFAULT_FPS,
-} from "./VideoEditor/constants";
+import { SAMPLE_KARAOKE_LINES, DEFAULT_FPS } from "./VideoEditor/constants";
 import { KaraokeLine } from "./VideoEditor/constants";
 import { BackgroundSettings } from "./VideoEditor/components/BackgroundSettings";
 import { AudioSettings } from "./VideoEditor/components/AudioSettings";
 import { VideoSettings } from "./VideoEditor/components/VideoSettings";
-import { TextSettings } from "./VideoEditor/components/TextSettings";
 import { LyricsEditor } from "./VideoEditor/components/LyricsEditor";
 import { Timeline } from "./VideoEditor/components/Timeline";
-
-// Danh sách font hỗ trợ tiếng Việt tốt
-const VIETNAMESE_FONTS = [
-  { value: "Arial, sans-serif", label: "Arial" },
-  { value: "Roboto, sans-serif", label: "Roboto" },
-  { value: "'Open Sans', sans-serif", label: "Open Sans" },
-  { value: "'Noto Sans', sans-serif", label: "Noto Sans" },
-  { value: "'Source Sans Pro', sans-serif", label: "Source Sans Pro" },
-  { value: "'Montserrat', sans-serif", label: "Montserrat" },
-  { value: "'Raleway', sans-serif", label: "Raleway" },
-  { value: "'Lato', sans-serif", label: "Lato" },
-  { value: "'Nunito', sans-serif", label: "Nunito" },
-  { value: "'Quicksand', sans-serif", label: "Quicksand" },
-  { value: "'Barlow', sans-serif", label: "Barlow" },
-  { value: "'Be Vietnam Pro', sans-serif", label: "Be Vietnam Pro" },
-  { value: "'Georgia', serif", label: "Georgia" },
-  { value: "'Times New Roman', serif", label: "Times New Roman" },
-];
+import {
+  VIETNAMESE_FONTS,
+  GOOGLE_FONTS_URL,
+} from "./VideoEditor/constants/fonts";
 
 export const VideoEditorApp: React.FC = () => {
   // State cho các thuộc tính của video
@@ -45,16 +23,21 @@ export const VideoEditorApp: React.FC = () => {
   const [audioSrc, setAudioSrc] = useState<string>("");
   const [karaokeLines, setKaraokeLines] =
     useState<KaraokeLine[]>(SAMPLE_KARAOKE_LINES);
-  const [activeWordColor, setActiveWordColor] =
-    useState<string>(DEFAULT_ACTIVE_COLOR);
-  const [inactiveWordColor, setInactiveWordColor] = useState<string>(
-    DEFAULT_INACTIVE_COLOR,
-  );
-  const [fontFamily, setFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
-  const [fontSize, setFontSize] = useState<number>(DEFAULT_FONT_SIZE);
+  // const [activeWordColor, setActiveWordColor] =
+  //   useState<string>(DEFAULT_ACTIVE_COLOR);
+  // const [inactiveWordColor, setInactiveWordColor] = useState<string>(
+  //   DEFAULT_INACTIVE_COLOR,
+  // );
+  // const [fontFamily, setFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
+  // const [fontSize, setFontSize] = useState<number>(DEFAULT_FONT_SIZE);
+  // const [fontWeight, setFontWeight] = useState<string>(DEFAULT_FONT_WEIGHT);
+  // const [textStroke, setTextStroke] = useState<string>(DEFAULT_TEXT_STROKE);
+  // const [textStrokeColor, setTextStrokeColor] = useState<string>(
+  //   DEFAULT_TEXT_STROKE_COLOR,
+  // );
   const [fps, setFps] = useState<number>(DEFAULT_FPS);
   const [durationInFrames, setDurationInFrames] = useState<number>(300);
-  
+
   // State để theo dõi vị trí hiện tại
   const [currentFrame, setCurrentFrame] = useState<number>(0);
 
@@ -74,8 +57,7 @@ export const VideoEditorApp: React.FC = () => {
     // Tạo link element để tải Google Fonts
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href =
-      "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Noto+Sans:wght@400;700&family=Source+Sans+Pro:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Nunito:wght@400;700&family=Quicksand:wght@400;700&family=Barlow:wght@400;700&family=Be+Vietnam+Pro:wght@400;700&display=swap";
+    link.href = GOOGLE_FONTS_URL;
     document.head.appendChild(link);
 
     // Cleanup khi component unmount
@@ -88,7 +70,7 @@ export const VideoEditorApp: React.FC = () => {
   const toggleBasicSettings = () => {
     setShowBasicSettings(!showBasicSettings);
   };
-  
+
   // Toggle hiển thị timeline
   const toggleTimeline = () => {
     setShowTimeline(!showTimeline);
@@ -105,13 +87,13 @@ export const VideoEditorApp: React.FC = () => {
       };
     }
   }, [audioSrc, fps]);
-  
+
   // Xử lý khi Timeline thay đổi thời gian
   const handleTimelineTimeChange = (timeInSeconds: number) => {
     // Chuyển đổi thời gian thành frame
     const frame = Math.round(timeInSeconds * fps);
     setCurrentFrame(frame);
-    
+
     // Cập nhật vị trí của player
     if (playerRef.current) {
       playerRef.current.seekTo(frame);
@@ -163,7 +145,7 @@ export const VideoEditorApp: React.FC = () => {
             />
 
             {/* Phần font và màu sắc */}
-            <TextSettings
+            {/* <TextSettings
               activeWordColor={activeWordColor}
               setActiveWordColor={setActiveWordColor}
               inactiveWordColor={inactiveWordColor}
@@ -172,8 +154,14 @@ export const VideoEditorApp: React.FC = () => {
               setFontFamily={setFontFamily}
               fontSize={fontSize}
               setFontSize={setFontSize}
+              fontWeight={fontWeight}
+              setFontWeight={setFontWeight}
+              textStroke={textStroke}
+              setTextStroke={setTextStroke}
+              textStrokeColor={textStrokeColor}
+              setTextStrokeColor={setTextStrokeColor}
               fontOptions={VIETNAMESE_FONTS}
-            />
+            /> */}
           </>
         )}
 
@@ -183,6 +171,7 @@ export const VideoEditorApp: React.FC = () => {
             karaokeLines={karaokeLines}
             setKaraokeLines={setKaraokeLines}
             fps={fps}
+            fontOptions={VIETNAMESE_FONTS} // Thêm fontOptions vào đây
           />
         </div>
       </div>
@@ -228,10 +217,13 @@ export const VideoEditorApp: React.FC = () => {
               backgroundColor,
               audioSrc,
               karaokeLines,
-              activeWordColor,
-              inactiveWordColor,
-              fontFamily,
-              fontSize,
+              // activeWordColor,
+              // inactiveWordColor,
+              // fontFamily,
+              // fontSize,
+              // fontWeight,
+              // textStroke,
+              // textStrokeColor,
               fps,
             }}
           />

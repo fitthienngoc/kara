@@ -12,13 +12,22 @@ export interface TimelineProps {
   onTimeChange?: (timeInSeconds: number) => void;
 }
 
+// Định nghĩa kiểu dữ liệu cho các dòng đã được phân bổ
+interface LinePlacement {
+  line: KaraokeLine;
+  lineIndex: number;
+  startPos: number;
+  endPos: number;
+  width: number;
+}
+
 export const Timeline: React.FC<TimelineProps> = ({
-  karaokeLines,
-  setKaraokeLines,
-  fps,
-  durationInFrames,
-  audioSrc,
-  onTimeChange,
+    karaokeLines,
+    setKaraokeLines,
+    fps,
+    durationInFrames,
+    audioSrc,
+    onTimeChange,
 }) => {
   const {
     currentTime,
@@ -49,6 +58,61 @@ export const Timeline: React.FC<TimelineProps> = ({
     audioSrc,
     onTimeChange,
   });
+
+  // Số dòng tối đa để hiển thị
+  const maxRows = 2;
+  
+  // Tính toán phân bổ các dòng karaoke vào các hàng
+  const distributeLinesToRows = (): LinePlacement[][] => {
+    // Khởi tạo mảng với kiểu dữ liệu cụ thể
+    const rows: LinePlacement[][] = Array(maxRows)
+      .fill(null)
+      .map(() => [] as LinePlacement[]);
+    
+    karaokeLines.forEach((line, index) => {
+      // Tính toán thời gian bắt đầu và kết thúc để xác định vị trí phù hợp
+      const startPos = timeToPosition(frameToTime(line.startTime));
+      const endPos = timeToPosition(frameToTime(line.endTime));
+      const lineWidth = endPos - startPos;
+      
+      // Tìm hàng phù hợp để đặt dòng karaoke
+      let targetRow = index % maxRows; // Mặc định phân bổ đều
+      
+      // Kiểm tra xem có thể đặt vào hàng nào mà không bị chồng lấn
+      for (let i = 0; i < maxRows; i++) {
+        const rowLines = rows[i];
+        let canPlace = true;
+        
+        for (const placedLine of rowLines) {
+          const placedStartPos = timeToPosition(frameToTime(placedLine.line.startTime));
+          const placedEndPos = timeToPosition(frameToTime(placedLine.line.endTime));
+          
+          // Kiểm tra xem có bị chồng lấn không
+          if (!(endPos < placedStartPos || startPos > placedEndPos)) {
+            canPlace = false;
+            break;
+          }
+        }
+        
+        if (canPlace) {
+          targetRow = i;
+          break;
+        }
+      }
+      
+      // Thêm dòng vào hàng đã chọn với kiểu dữ liệu rõ ràng
+      rows[targetRow].push({
+        line,
+        lineIndex: index,
+        startPos,
+        endPos,
+        width: lineWidth
+      });
+    });
+    return rows;
+  };
+
+  const rows = distributeLinesToRows();
 
   return (
     <div className="mt-4 bg-gray-900 p-4 rounded-lg">
@@ -135,7 +199,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       {/* Timeline container */}
       <div
         className="relative overflow-x-auto"
-        style={{ height: karaokeLines.length * 40 + 120 }}
+        style={{ height: maxRows * 40 + 120 }} // Chiều cao cố định dựa trên số dòng tối đa
       >
         {/* Playhead - Cải thiện animation */}
         <div
@@ -191,89 +255,93 @@ export const Timeline: React.FC<TimelineProps> = ({
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Karaoke lines */}
-          {karaokeLines.map((line, lineIndex) => (
+          {/* Karaoke lines - Hiển thị theo hàng */}
+          {rows.map((rowLines, rowIndex) => (
             <div
-              key={lineIndex}
+              key={rowIndex}
               className="relative h-10 border-b border-gray-700"
             >
-              {/* Line block */}
-              <div
-                className="absolute h-6 mt-2 bg-blue-800 rounded opacity-70 cursor-move flex items-center px-1 text-xs text-white overflow-hidden"
-                style={{
-                  left: timeToPosition(frameToTime(line.startTime)),
-                  width: timeToPosition(
-                    frameToTime(line.endTime - line.startTime),
-                  ),
-                }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  handleMouseDown(e, "line", lineIndex);
-                }}
-              >
-                {line.words.map((word) => word.word).join(" ")}
-              </div>
-
-              {/* Line start handle */}
-              <div
-                className="absolute h-6 w-2 mt-2 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
-                style={{
-                  left: timeToPosition(frameToTime(line.startTime)),
-                }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  handleMouseDown(e, "line", lineIndex, undefined, "start");
-                }}
-              ></div>
-
-              {/* Line end handle */}
-              <div
-                className="absolute h-6 w-2 mt-2 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
-                style={{
-                  left: timeToPosition(frameToTime(line.endTime)),
-                }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  handleMouseDown(e, "line", lineIndex, undefined, "end");
-                }}
-              ></div>
-
-              {/* Words */}
-              {line.words.map((word, wordIndex) => (
-                <div
-                  key={wordIndex}
-                  className="absolute h-4 mt-3 bg-green-600 rounded opacity-80 cursor-move flex items-center justify-center text-xs text-white overflow-hidden hover:opacity-100 transition-opacity"
-                  style={{
-                    left: timeToPosition(frameToTime(word.startTime)),
-                    width: timeToPosition(
-                      frameToTime(word.endTime - word.startTime),
-                    ),
-                  }}
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                    handleMouseDown(e, "word", lineIndex, wordIndex);
-                  }}
-                >
-                  {word.word}
-
-                  {/* Word start handle */}
+              {rowLines.map(({ line, lineIndex }) => (
+                <React.Fragment key={lineIndex}>
+                  {/* Line block */}
                   <div
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                    className="absolute h-6 mt-2 bg-blue-800 rounded opacity-70 cursor-move flex items-center px-1 text-xs text-white overflow-hidden"
+                    style={{
+                      left: timeToPosition(frameToTime(line.startTime)),
+                      width: timeToPosition(
+                        frameToTime(line.endTime - line.startTime),
+                      ),
+                    }}
                     onMouseDown={(e) => {
                       e.stopPropagation();
-                      handleMouseDown(e, "word", lineIndex, wordIndex, "start");
+                      handleMouseDown(e, "line", lineIndex);
+                    }}
+                  >
+                    {line.words.map((word) => word.word).join(" ")}
+                  </div>
+
+                  {/* Line start handle */}
+                  <div
+                    className="absolute h-6 w-2 mt-2 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                    style={{
+                      left: timeToPosition(frameToTime(line.startTime)),
+                    }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      handleMouseDown(e, "line", lineIndex, undefined, "start");
                     }}
                   ></div>
 
-                  {/* Word end handle */}
+                  {/* Line end handle */}
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-1 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                    className="absolute h-6 w-2 mt-2 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                    style={{
+                      left: timeToPosition(frameToTime(line.endTime)),
+                    }}
                     onMouseDown={(e) => {
                       e.stopPropagation();
-                      handleMouseDown(e, "word", lineIndex, wordIndex, "end");
+                      handleMouseDown(e, "line", lineIndex, undefined, "end");
                     }}
                   ></div>
-                </div>
+
+                  {/* Words */}
+                  {line.words.map((word, wordIndex) => (
+                    <div
+                      key={wordIndex}
+                      className="absolute h-4 mt-3 bg-green-600 rounded opacity-80 cursor-move flex items-center justify-center text-xs text-white overflow-hidden hover:opacity-100 transition-opacity"
+                      style={{
+                        left: timeToPosition(frameToTime(word.startTime)),
+                        width: timeToPosition(
+                          frameToTime(word.endTime - word.startTime),
+                        ),
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        handleMouseDown(e, "word", lineIndex, wordIndex);
+                      }}
+                    >
+                      {word.word}
+
+                      {/* Word start handle */}
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-1 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          handleMouseDown(e, "word", lineIndex, wordIndex, "start");
+                        }}
+                      ></div>
+
+                      {/* Word end handle */}
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          handleMouseDown(e, "word", lineIndex, wordIndex, "end");
+                        }}
+                      ></div>
+                    </div>
+                  ))}
+                </React.Fragment>
               ))}
             </div>
           ))}
