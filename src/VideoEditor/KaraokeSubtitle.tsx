@@ -118,8 +118,8 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({ lines }) => {
       
       .countdown-dot {
         display: inline-block;
-        width: 0.8em;
-        height: 0.8em;
+        width: 0.5em;
+        height: 0.5em;
         margin-right: 0.4em;
         border-radius: 50%;
         background-color: ${DEFAULT_INACTIVE_COLOR};
@@ -228,14 +228,26 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({ lines }) => {
                 >
                   {countdown && (
                     <div className="countdown-container">
-                      {[0, 1, 2].map((dotIndex) => (
-                        <div
-                          key={dotIndex}
-                          className={`countdown-dot ${
-                            dotStatus[dotIndex] ? "active" : ""
-                          }`}
-                        />
-                      ))}
+                      {[0, 1, 2].map((dotIndex) => {
+                        const activeColor =
+                          lineStyle.activeColor || DEFAULT_ACTIVE_COLOR;
+                        const inactiveColor =
+                          lineStyle.inactiveColor || DEFAULT_INACTIVE_COLOR;
+
+                        return (
+                          <div
+                            key={dotIndex}
+                            className={`countdown-dot ${
+                              dotStatus[dotIndex] ? "active" : ""
+                            }`}
+                            style={{
+                              backgroundColor: dotStatus[dotIndex]
+                                ? activeColor // Nếu active, dùng màu active
+                                : inactiveColor, // Nếu không active, dùng màu inactive
+                            }}
+                          />
+                        );
+                      })}
                     </div>
                   )}
 

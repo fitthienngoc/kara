@@ -16,7 +16,7 @@ if (isEditorMode) {
 
 // Đăng ký Root component tùy thuộc vào chế độ
 if (!isEditorMode) {
-  registerRoot(() => React.createElement(VideoEditorApp));
-} else {
   registerRoot(RemotionRoot);
+} else {
+  registerRoot(() => React.createElement(VideoEditorApp));
 }

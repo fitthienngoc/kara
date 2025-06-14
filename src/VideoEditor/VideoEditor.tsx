@@ -46,11 +46,6 @@ export const VideoEditor: React.FC<z.infer<typeof videoEditorSchema>> = ({
 
       {/* Hiển thị subtitle dạng karaoke */}
       <KaraokeSubtitle lines={karaokeLines} />
-
-      {/* Hiển thị thông tin FPS */}
-      <div className="absolute top-2.5 right-2.5 bg-black/50 text-white px-2.5 py-1.5 rounded text-sm font-mono">
-        {remotionFps} FPS
-      </div>
     </AbsoluteFill>
   );
 };

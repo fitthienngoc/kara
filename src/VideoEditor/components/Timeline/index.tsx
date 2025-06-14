@@ -145,13 +145,23 @@ export const Timeline: React.FC<TimelineProps> = ({
         if (!line.words || line.words.length === 0) return line;
 
         const updatedWords = line.words.map((word, index) => {
-          const nextWord = line.words[index + 1];
+          const nextWord = line.words[index + 1]; // Lấy từ tiếp theo
           if (!word.startTime) {
             // Nếu từ không có startTime, sử dụng thời gian hiện tại
             word.startTime = Math.round(currentTime * fps);
           }
+
+          // Nếu là từ cuối của câu
+          if (!nextWord) {
+            return {
+              ...word,
+              endTime: word.endTime, // Giữ nguyên endTime của từ cuối
+            };
+          }
+
+          // Nếu không phải từ cuối, tính toán endTime
           const calculatedEndTime =
-            nextWord?.startTime ??
+            nextWord.startTime ??
             word.endTime ??
             word.startTime + Math.round(0.5 * fps); // Thời gian kết thúc mặc định
 
