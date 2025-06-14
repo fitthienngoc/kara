@@ -174,12 +174,13 @@ export const Timeline: React.FC<TimelineProps> = ({
   // Add to the existing useEffect for keyboard events
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.code === "Space" && recording) {
+      if (e.code === "Space") {
+        if (!recording) {
+          e.preventDefault();
+          togglePlay();
+        }
         e.preventDefault();
         handleWordTap();
-      } else {
-        e.preventDefault();
-        togglePlay();
       }
 
       // Handle delete key to reset the current line

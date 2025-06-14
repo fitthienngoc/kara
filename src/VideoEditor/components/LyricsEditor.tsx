@@ -362,6 +362,36 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
   };
 
   // Chuyển đổi từ tabs sang karaokeLines khi lưu
+  const findTimingForLine = (
+    karaokeLines: KaraokeLine[],
+    content: string,
+  ): { startTime?: number; endTime?: number } => {
+    for (const line of karaokeLines) {
+      const lineContent = line.words.map((word) => word.word).join(" ");
+      if (lineContent === content) {
+        return { startTime: line.startTime, endTime: line.endTime };
+      }
+    }
+    return {};
+  };
+
+  const findTimingForWords = (
+    karaokeLines: KaraokeLine[],
+    content: string,
+  ): { word: string; startTime?: number; endTime?: number }[] => {
+    for (const line of karaokeLines) {
+      const lineContent = line.words.map((word) => word.word).join(" ");
+      if (lineContent === content) {
+        // Trả về danh sách từ với thứ tự chính xác
+        return line.words.map(({ word, startTime, endTime }) => ({
+          word,
+          startTime,
+          endTime,
+        }));
+      }
+    }
+    return [];
+  };
 
   const convertTabsToKaraokeLines = (): KaraokeLine[] => {
     const result: KaraokeLineWithStyle[] = [];
@@ -372,23 +402,40 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
 
       sortedLines.forEach((line) => {
         if (line.content.trim()) {
-          // Tách các từ trong dòng
-          const wordTexts = line.content.trim().split(/\s+/);
+          // Tìm timing cho dòng từ karaokeLines gốc
+          const { startTime, endTime } = findTimingForLine(
+            karaokeLines,
+            line.content,
+          );
 
-          // Tạo danh sách từ mà không có thời gian
-          const words = wordTexts.map((wordText) => ({
-            word: wordText,
-            startTime: undefined, // Không gán thời gian
-            endTime: undefined, // Không gán thời gian
-            style: textSettingsToStyle(tab.textSettings), // Thêm thông tin style
-          }));
+          // Tìm timing cho từng từ từ karaokeLines gốc
+          const wordsWithTiming = findTimingForWords(
+            karaokeLines,
+            line.content,
+          );
 
-          // Thêm dòng vào kết quả mà không có thời gian
+          // Nếu không tìm thấy timing từ karaokeLines, tạo mặc định
+          const words =
+            wordsWithTiming.length > 0
+              ? wordsWithTiming.map((word) => ({
+                  word: word.word,
+                  startTime: word.startTime,
+                  endTime: word.endTime,
+                  style: textSettingsToStyle(tab.textSettings),
+                }))
+              : line.content.split(/\s+/).map((wordText) => ({
+                  word: wordText,
+                  startTime: undefined,
+                  endTime: undefined,
+                  style: textSettingsToStyle(tab.textSettings),
+                }));
+
+          // Thêm dòng vào kết quả
           result.push({
-            startTime: undefined, // Không gán thời gian
-            endTime: undefined, // Không gán thời gian
+            startTime,
+            endTime,
             words,
-            style: textSettingsToStyle(tab.textSettings), // Thêm thông tin style
+            style: textSettingsToStyle(tab.textSettings),
             countDown: line.countdown,
           });
         }
@@ -405,6 +452,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
       handleFullLyricsSave();
 
       const newKaraokeLines = convertTabsToKaraokeLines();
+
       setKaraokeLines(newKaraokeLines);
     } catch (error) {
       console.error("Lỗi khi chuyển đổi lời:", error);

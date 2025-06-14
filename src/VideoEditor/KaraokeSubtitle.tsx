@@ -11,6 +11,7 @@ import {
   KaraokeLine,
 } from "./constants";
 import { KaraokeLineWithStyle, TextStyle } from "./types";
+import clsx from "clsx";
 
 interface KaraokeSubtitleProps {
   lines: KaraokeLine[];
@@ -23,7 +24,7 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({ lines }) => {
 
   // Tìm các dòng hiện tại đang được hiển thị, bao gồm cả thời gian chuẩn bị
   const currentLines = lines.filter(
-    (line) => frame >= line.startTime - previewFrames && frame <= line.endTime,
+    (line) => line.startTime !== undefined && line.endTime !== undefined,
   );
 
   // Tạo style cho hiệu ứng karaoke
@@ -57,9 +58,19 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({ lines }) => {
           DEFAULT_TEXT_STROKE_COLOR;
 
         const wordKey = `line${lineIndex}-word${wordIndex}`;
-        const duration = word.endTime - word.startTime;
 
-        if (duration > 0 && frame >= word.startTime && frame < word.endTime) {
+        const duration =
+          word.startTime !== undefined && word.endTime !== undefined
+            ? word.endTime - word.startTime
+            : 0;
+
+        if (
+          duration > 0 &&
+          word.startTime !== undefined &&
+          word.endTime !== undefined &&
+          frame >= word.startTime &&
+          frame < word.endTime
+        ) {
           const remainingDuration = (word.endTime - frame) / 60; // Chuyển đổi frame sang giây (giả sử 60fps)
 
           styles += `
@@ -139,6 +150,8 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({ lines }) => {
 
   // Xác định trạng thái của các chấm đếm ngược
   const getCountdownDotStatus = (line: KaraokeLine) => {
+    if (line.startTime === undefined) return [false, false, false];
+
     const timeToStart = line.startTime - frame;
 
     // Nếu đã bắt đầu, tất cả các chấm đều không active
@@ -173,99 +186,120 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({ lines }) => {
           textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
         }}
       >
-        {currentLines.map((line, lineIndex) => {
-          const lineWithStyle = line as KaraokeLineWithStyle;
-          const lineStyle = lineWithStyle.style || ({} as Partial<TextStyle>);
+        <div className="w-full h-full relative">
+          {currentLines.map((line, lineIndex) => {
+            const lineWithStyle = line as KaraokeLineWithStyle;
+            const lineStyle = lineWithStyle.style || ({} as Partial<TextStyle>);
 
-          // Sử dụng style của dòng nếu có, nếu không sử dụng giá trị mặc định
-          const lineFontFamily = lineStyle.fontFamily || DEFAULT_FONT_FAMILY;
-          const lineFontSize = lineStyle.fontSize || DEFAULT_FONT_SIZE;
-          const lineFontWeight = lineStyle.fontWeight || DEFAULT_FONT_WEIGHT;
+            // Sử dụng style của dòng nếu có, nếu không sử dụng giá trị mặc định
+            const lineFontFamily = lineStyle.fontFamily || DEFAULT_FONT_FAMILY;
+            const lineFontSize = lineStyle.fontSize || DEFAULT_FONT_SIZE;
+            const lineFontWeight = lineStyle.fontWeight || DEFAULT_FONT_WEIGHT;
 
-          const isPreview = frame < line.startTime;
-          const opacity = isPreview ? 0.5 : 1;
-          const dotStatus = getCountdownDotStatus(line);
-          const countdown = line.countDown;
-          return (
-            <div
-              key={lineIndex}
-              className="w-full flex flex-col items-center mb-2.5"
-              style={{
-                fontFamily: lineFontFamily,
-                fontSize: lineFontSize,
-                fontWeight: lineFontWeight,
-              }}
-            >
+            const isPreview = frame < (line.startTime ?? 0);
+            const opacity = isPreview ? 0.5 : 1;
+            const dotStatus = getCountdownDotStatus(line);
+            const countdown = line.countDown;
+            const isActive =
+              line.startTime !== undefined &&
+              line.endTime !== undefined &&
+              frame >= line.startTime - previewFrames &&
+              frame <= line.endTime;
+
+            return (
               <div
-                className="w-full flex flex-wrap justify-center items-center"
-                style={{ opacity }}
-              >
-                {countdown && (
-                  <div className="countdown-container">
-                    {[0, 1, 2].map((dotIndex) => (
-                      <div
-                        key={dotIndex}
-                        className={`countdown-dot ${dotStatus[dotIndex] ? "active" : ""}`}
-                      />
-                    ))}
-                  </div>
+                key={lineIndex}
+                className={clsx(
+                  !isActive && "opacity-0",
+                  "absolute w-full flex flex-col mb-2.5 bottom-0 left-0",
                 )}
+                style={{
+                  fontFamily: lineFontFamily,
+                  fontSize: lineFontSize,
+                  fontWeight: lineFontWeight,
+                }}
+              >
+                <div
+                  className={clsx(
+                    lineIndex % 2 === 0 ? "mb-40" : "mb-10 justify-end",
+                    "px-14 w-full flex flex-wrap items-center",
+                  )}
+                  style={{ opacity }}
+                >
+                  {countdown && (
+                    <div className="countdown-container">
+                      {[0, 1, 2].map((dotIndex) => (
+                        <div
+                          key={dotIndex}
+                          className={`countdown-dot ${
+                            dotStatus[dotIndex] ? "active" : ""
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
 
-                {line.words.map((word, wordIndex) => {
-                  const wordWithStyle =
-                    word as KaraokeLineWithStyle["words"][0];
-                  const wordStyle =
-                    wordWithStyle.style ||
-                    lineStyle ||
-                    ({} as Partial<TextStyle>);
+                  {line.words.map((word, wordIndex) => {
+                    const wordWithStyle =
+                      word as KaraokeLineWithStyle["words"][0];
+                    const wordStyle =
+                      wordWithStyle.style ||
+                      lineStyle ||
+                      ({} as Partial<TextStyle>);
 
-                  // Sử dụng style của từ/dòng nếu có, nếu không sử dụng giá trị mặc định
-                  const activeColor =
-                    wordStyle.activeColor ||
-                    lineStyle.activeColor ||
-                    DEFAULT_ACTIVE_COLOR;
+                    // Sử dụng style của từ/dòng nếu có, nếu không sử dụng giá trị mặc định
+                    const activeColor =
+                      wordStyle.activeColor ||
+                      lineStyle.activeColor ||
+                      DEFAULT_ACTIVE_COLOR;
 
-                  const wordKey = `line${lineIndex}-word${wordIndex}`;
+                    const wordKey = `line${lineIndex}-word${wordIndex}`;
 
-                  // Xác định trạng thái của từ
-                  let width = "0%";
-                  if (frame > word.endTime) {
-                    width = "100%";
-                  } else if (frame >= word.startTime) {
-                    const duration = word.endTime - word.startTime;
-                    width =
-                      duration > 0
-                        ? `${((frame - word.startTime) / duration) * 100}%`
-                        : "100%";
-                  }
+                    // Xác định trạng thái của từ
+                    let width = "0%";
+                    if (
+                      word.startTime !== undefined &&
+                      word.endTime !== undefined
+                    ) {
+                      if (frame > word.endTime) {
+                        width = "100%";
+                      } else if (frame >= word.startTime) {
+                        const duration = word.endTime - word.startTime;
+                        width =
+                          duration > 0
+                            ? `${((frame - word.startTime) / duration) * 100}%`
+                            : "100%";
+                      }
+                    }
 
-                  return (
-                    <span
-                      key={wordIndex}
-                      className={`karaoke-word word-${wordKey} mr-2 inline-block`}
-                      data-text={word.word}
-                    >
-                      {word.word}
+                    return (
                       <span
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          top: 0,
-                          color: activeColor,
-                          overflow: "hidden",
-                          width: width,
-                          whiteSpace: "nowrap",
-                        }}
+                        key={wordIndex}
+                        className={`karaoke-word word-${wordKey} mr-2 inline-block`}
+                        data-text={word.word}
                       >
                         {word.word}
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            top: 0,
+                            color: activeColor,
+                            overflow: "hidden",
+                            width: width,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {word.word}
+                        </span>
                       </span>
-                    </span>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </>
   );
