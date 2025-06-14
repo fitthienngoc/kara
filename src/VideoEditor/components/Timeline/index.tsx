@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { KaraokeLine } from "../../constants";
 import useTimeLine from "./hooks";
+import clsx from "clsx";
 
 export interface TimelineProps {
   karaokeLines: KaraokeLine[];
@@ -65,41 +66,50 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const handleWordTap = () => {
     if (!recording || currentLineIndex === null) return;
+
     setKaraokeLines((prevLines) => {
       const lines = [...prevLines];
       const line = { ...lines[currentLineIndex] };
       const words = [...line.words];
+
       if (currentWordIndex >= words.length) return prevLines;
 
-      const start = Math.round(currentTime * fps);
-      const duration = Math.round(0.3 * fps);
+      const start = Math.round(currentTime * fps); // Thời gian hiện tại của playhead
 
-      if (currentWordIndex === 0) {
-        words[currentWordIndex] = {
-          ...words[currentWordIndex],
-          startTime: start,
-          endTime: start + duration,
-        };
+      // Tính toán thời gian kết thúc của từ hiện tại
+      let end: number | undefined;
+      if (currentWordIndex < words.length - 1) {
+        // Nếu không phải từ cuối cùng, thời gian kết thúc là thời gian bắt đầu của từ tiếp theo
+        end =
+          words[currentWordIndex + 1].startTime ??
+          start + Math.round(0.3 * fps);
       } else {
-        const prev = words[currentWordIndex - 1];
-        words[currentWordIndex] = {
-          ...words[currentWordIndex],
-          startTime: prev.endTime,
-          endTime: prev.endTime + duration,
-        };
+        // Nếu là từ cuối cùng, kéo dài đến cuối dòng hoặc một khoảng mặc định
+        end = start + Math.round(0.5 * fps);
       }
 
+      // Cập nhật thời gian cho từ hiện tại
+      words[currentWordIndex] = {
+        ...words[currentWordIndex],
+        startTime: start,
+        endTime: end,
+      };
+
+      // Cập nhật thời gian của dòng
       line.words = words;
-      line.startTime = words[0].startTime;
-      line.endTime = words[words.length - 1].endTime;
+      line.startTime = words[0]?.startTime ?? undefined;
+      line.endTime = Math.max(
+        ...words.map((word) => word.endTime || 0), // Lấy giá trị endTime lớn nhất trong các từ
+      );
       lines[currentLineIndex] = line;
       return lines;
     });
+
     const nextWordIndex = currentWordIndex + 1;
     if (currentLineIndex !== null) {
       const line = karaokeLines[currentLineIndex];
       if (nextWordIndex >= line.words.length) {
-        // Move to next line or stop recording
+        // Chuyển sang dòng tiếp theo hoặc dừng ghi
         if (currentLineIndex + 1 < karaokeLines.length) {
           setCurrentLineIndex(currentLineIndex + 1);
           setCurrentWordIndex(0);
@@ -113,7 +123,6 @@ export const Timeline: React.FC<TimelineProps> = ({
       }
     }
   };
-
   const startRecording = () => {
     if (currentLineIndex !== null) {
       setRecording(true);
@@ -127,16 +136,86 @@ export const Timeline: React.FC<TimelineProps> = ({
     setCurrentWordIndex(0);
   };
 
+  // Add the optimizeTiming function
+  const optimizeTiming = () => {
+    const padding = Math.round(0.2 * fps); // Thời gian đệm thêm (0.2 giây)
+
+    setKaraokeLines((prevLines) => {
+      return prevLines.map((line) => {
+        if (!line.words || line.words.length === 0) return line;
+
+        const updatedWords = line.words.map((word, index) => {
+          const nextWord = line.words[index + 1];
+          if (!word.startTime) {
+            // Nếu từ không có startTime, sử dụng thời gian hiện tại
+            word.startTime = Math.round(currentTime * fps);
+          }
+          const calculatedEndTime =
+            nextWord?.startTime ??
+            word.endTime ??
+            word.startTime + Math.round(0.5 * fps); // Thời gian kết thúc mặc định
+
+          return {
+            ...word,
+            endTime: calculatedEndTime + padding, // Thêm thời gian đệm vào endTime
+          };
+        });
+
+        return {
+          ...line,
+          words: updatedWords,
+          startTime: updatedWords[0]?.startTime,
+          endTime: updatedWords[updatedWords.length - 1]?.endTime,
+        };
+      });
+    });
+  };
+
+  // Add to the existing useEffect for keyboard events
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.code === "Space" && recording) {
         e.preventDefault();
         handleWordTap();
+      } else {
+        e.preventDefault();
+        togglePlay();
+      }
+
+      // Handle delete key to reset the current line
+      if (e.code === "Delete" || e.code === "Backspace") {
+        if (currentLineIndex === null) return;
+        e.preventDefault();
+        setKaraokeLines((prevLines) => {
+          const lines = [...prevLines];
+          const line = { ...lines[currentLineIndex] };
+
+          // Reset startTime and endTime to undefined
+          line.startTime = undefined;
+          line.endTime = undefined;
+
+          // Reset words' timing as well
+          line.words = line.words.map((word) => ({
+            ...word,
+            startTime: undefined,
+            endTime: undefined,
+          }));
+
+          lines[currentLineIndex] = line;
+          return lines;
+        });
       }
     };
+
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [recording, currentWordIndex, currentLineIndex, currentTime]);
+  }, [
+    recording,
+    currentWordIndex,
+    currentLineIndex,
+    currentTime,
+    setKaraokeLines,
+  ]);
 
   // Số dòng tối đa để hiển thị
   const maxRows = 2;
@@ -149,6 +228,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       .map(() => [] as LinePlacement[]);
 
     karaokeLines.forEach((line, index) => {
+      if (!line.startTime || !line.endTime) return;
       // Tính toán thời gian bắt đầu và kết thúc để xác định vị trí phù hợp
       const startPos = timeToPosition(frameToTime(line.startTime));
       const endPos = timeToPosition(frameToTime(line.endTime));
@@ -163,6 +243,8 @@ export const Timeline: React.FC<TimelineProps> = ({
         let canPlace = true;
 
         for (const placedLine of rowLines) {
+          if (!placedLine.line.startTime || !placedLine.line.endTime) continue;
+
           const placedStartPos = timeToPosition(
             frameToTime(placedLine.line.startTime),
           );
@@ -244,14 +326,24 @@ export const Timeline: React.FC<TimelineProps> = ({
           )}
         </button>
 
-        <button
-          className={`px-1 py-0.5 rounded text-[10px] ${recording ? "bg-red-600" : "bg-green-600"} text-white`}
-          onClick={recording ? stopRecording : startRecording}
-          disabled={currentLineIndex === null}
-        >
-          {recording ? "⏹ Dừng ghi" : "🎙 Ghi từng từ"}
-        </button>
-
+        {currentLineIndex === null ? (
+          <button
+            className={`px-1 py-0.5 rounded text-[10px] bg-green-600 text-white`}
+            onClick={() => {
+              setCurrentLineIndex(0);
+              setCurrentWordIndex(0);
+            }}
+          >
+            Sẵn sàng
+          </button>
+        ) : (
+          <button
+            className={`px-1 py-0.5 rounded text-[10px] ${recording ? "bg-red-600" : "bg-green-600"} text-white`}
+            onClick={recording ? stopRecording : startRecording}
+          >
+            {recording ? "⏹ Dừng ghi" : "🎙 Ghi từng từ"}
+          </button>
+        )}
         <div className="text-white font-mono text-[10px]">
           {Math.floor(currentTime / 60)}:
           {Math.floor(currentTime % 60)
@@ -262,7 +354,6 @@ export const Timeline: React.FC<TimelineProps> = ({
             .toString()
             .padStart(2, "0")}
         </div>
-
         <div className="flex items-center">
           <input
             type="range"
@@ -277,6 +368,13 @@ export const Timeline: React.FC<TimelineProps> = ({
             {zoom.toFixed(1)}x
           </span>
         </div>
+        {/* Add Optimize Timing Button */}
+        <button
+          className="px-1 py-0.5 rounded text-[10px] bg-yellow-500 text-white"
+          onClick={optimizeTiming}
+        >
+          Optimize Timing
+        </button>
       </div>
 
       {/* Audio element (hidden) */}
@@ -350,109 +448,137 @@ export const Timeline: React.FC<TimelineProps> = ({
           {rows.map((rowLines, rowIndex) => (
             <div
               key={rowIndex}
-              className="relative h-10 border-b border-gray-700"
+              className={"relative h-10 border-b border-gray-700"}
             >
               {rowLines.map(({ line, lineIndex }) => (
                 <React.Fragment key={lineIndex}>
                   {/* Line block */}
-                  <div
-                    className="absolute h-8 mt-1 bg-blue-800 rounded opacity-70 cursor-move flex items-end justify-center px-0.5 text-[10px] text-white overflow-hidden"
-                    style={{
-                      left: timeToPosition(frameToTime(line.startTime)),
-                      width: timeToPosition(
-                        frameToTime(line.endTime - line.startTime),
-                      ),
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      handleMouseDown(e, "line", lineIndex);
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation(); // Ngăn sự kiện click lan truyền
-                      setCurrentLineIndex(lineIndex);
-                    }}
-                  >
-                    {line.words.map((word) => word.word).join(" ")}
-                  </div>
-
-                  {/* Line start handle */}
-                  <div
-                    className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
-                    style={{
-                      left: timeToPosition(frameToTime(line.startTime)),
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      handleMouseDown(e, "line", lineIndex, undefined, "start");
-                    }}
-                    onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
-                  ></div>
-
-                  {/* Line end handle */}
-                  <div
-                    className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
-                    style={{
-                      left: timeToPosition(frameToTime(line.endTime)),
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      handleMouseDown(e, "line", lineIndex, undefined, "end");
-                    }}
-                    onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
-                  ></div>
-
-                  {/* Words */}
-                  {line.words.map((word, wordIndex) => (
+                  {line.startTime && line.endTime && (
                     <div
-                      key={wordIndex}
-                      className="absolute h-5 mt-1 bg-green-600 rounded opacity-80 cursor-move flex items-center justify-center text-[10px] text-white overflow-hidden hover:opacity-100 transition-opacity"
-                      style={{
-                        left: timeToPosition(frameToTime(word.startTime)),
-                        width: timeToPosition(
-                          frameToTime(word.endTime - word.startTime),
-                        ),
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        handleMouseDown(e, "word", lineIndex, wordIndex);
-                      }}
-                      onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                      className={clsx(
+                        lineIndex !== currentLineIndex && "opacity-30",
+                      )}
                     >
-                      {word.word}
-
-                      {/* Word start handle */}
                       <div
-                        className="absolute left-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                        className="absolute h-8 mt-1 bg-blue-800 rounded opacity-70 cursor-move flex items-end justify-center px-0.5 text-[10px] text-white overflow-hidden"
+                        style={{
+                          left: timeToPosition(frameToTime(line.startTime)),
+                          width: timeToPosition(
+                            frameToTime(line.endTime - line.startTime),
+                          ),
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          handleMouseDown(e, "line", lineIndex);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Ngăn sự kiện click lan truyền
+                          setCurrentLineIndex(lineIndex);
+                        }}
+                      >
+                        {line.words.map((word) => word.word).join(" ")}
+                      </div>
+
+                      {/* Line start handle */}
+                      <div
+                        className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                        style={{
+                          left: timeToPosition(frameToTime(line.startTime)),
+                        }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           handleMouseDown(
                             e,
-                            "word",
+                            "line",
                             lineIndex,
-                            wordIndex,
+                            undefined,
                             "start",
                           );
                         }}
                         onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
                       ></div>
 
-                      {/* Word end handle */}
+                      {/* Line end handle */}
                       <div
-                        className="absolute right-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                        className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                        style={{
+                          left: timeToPosition(frameToTime(line.endTime)),
+                        }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           handleMouseDown(
                             e,
-                            "word",
+                            "line",
                             lineIndex,
-                            wordIndex,
+                            undefined,
                             "end",
                           );
                         }}
                         onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
                       ></div>
                     </div>
-                  ))}
+                  )}
+                  {/* Words */}
+                  {line.words.map(
+                    (word, wordIndex) =>
+                      word.startTime &&
+                      word.endTime && (
+                        <div
+                          key={wordIndex}
+                          className={clsx(
+                            lineIndex !== currentLineIndex
+                              ? "opacity-30"
+                              : "opacity-80",
+                            "absolute h-5 mt-1 bg-green-600 rounded  cursor-move flex items-center justify-center text-[10px] text-white overflow-hidden hover:opacity-100 transition-opacity",
+                          )}
+                          style={{
+                            left: timeToPosition(frameToTime(word.startTime)),
+                            width: timeToPosition(
+                              frameToTime(word.endTime - word.startTime),
+                            ),
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            handleMouseDown(e, "word", lineIndex, wordIndex);
+                          }}
+                          onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                        >
+                          {word.word}
+
+                          {/* Word start handle */}
+                          <div
+                            className="absolute left-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleMouseDown(
+                                e,
+                                "word",
+                                lineIndex,
+                                wordIndex,
+                                "start",
+                              );
+                            }}
+                            onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                          ></div>
+
+                          {/* Word end handle */}
+                          <div
+                            className="absolute right-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleMouseDown(
+                                e,
+                                "word",
+                                lineIndex,
+                                wordIndex,
+                                "end",
+                              );
+                            }}
+                            onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                          ></div>
+                        </div>
+                      ),
+                  )}
                 </React.Fragment>
               ))}
             </div>

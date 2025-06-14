@@ -27,8 +27,8 @@ interface KaraokeLineWithStyle extends KaraokeLine {
   style?: TextStyle;
   words: {
     word: string;
-    startTime: number;
-    endTime: number;
+    startTime?: number;
+    endTime?: number;
     style?: TextStyle;
   }[];
 }
@@ -98,7 +98,6 @@ const textStyleToSettings = (
 export const LyricsEditor: React.FC<LyricsEditorProps> = ({
   karaokeLines,
   setKaraokeLines,
-  fps,
   fontOptions,
   defaultTextSettings,
 }) => {
@@ -363,13 +362,12 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
   };
 
   // Chuyển đổi từ tabs sang karaokeLines khi lưu
+
   const convertTabsToKaraokeLines = (): KaraokeLine[] => {
     const result: KaraokeLineWithStyle[] = [];
-    let currentStartTime = 30; // Bắt đầu từ frame 30
 
     // Xử lý từng tab
     tabs.forEach((tab) => {
-      // Sắp xếp các dòng theo ID
       const sortedLines = [...tab.lines].sort((a, b) => a.id - b.id);
 
       sortedLines.forEach((line) => {
@@ -377,39 +375,22 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
           // Tách các từ trong dòng
           const wordTexts = line.content.trim().split(/\s+/);
 
-          // Tính toán thời gian cho từng từ
-          const words = wordTexts.map((wordText, index) => {
-            const wordDuration = Math.round(0.3 * fps); // 0.3 giây cho mỗi từ
-            const wordStartTime = currentStartTime + index * wordDuration;
+          // Tạo danh sách từ mà không có thời gian
+          const words = wordTexts.map((wordText) => ({
+            word: wordText,
+            startTime: undefined, // Không gán thời gian
+            endTime: undefined, // Không gán thời gian
+            style: textSettingsToStyle(tab.textSettings), // Thêm thông tin style
+          }));
 
-            return {
-              word: wordText,
-              startTime: wordStartTime,
-              endTime: wordStartTime + wordDuration,
-              // Thêm thông tin style từ tab - chuyển đổi từ TextSettings sang TextStyle
-              style: textSettingsToStyle(tab.textSettings),
-            };
-          });
-
-          // Tính thời gian kết thúc của dòng
-          const lineEndTime =
-            currentStartTime +
-            words.length * Math.round(0.3 * fps) +
-            Math.round(0.5 * fps);
-
-          // Thêm dòng vào kết quả
+          // Thêm dòng vào kết quả mà không có thời gian
           result.push({
-            startTime: currentStartTime,
-            endTime: lineEndTime,
+            startTime: undefined, // Không gán thời gian
+            endTime: undefined, // Không gán thời gian
             words,
-            // Thêm thông tin style từ tab - chuyển đổi từ TextSettings sang TextStyle
-            style: textSettingsToStyle(tab.textSettings),
+            style: textSettingsToStyle(tab.textSettings), // Thêm thông tin style
             countDown: line.countdown,
           });
-
-          // Cập nhật thời gian bắt đầu cho dòng tiếp theo
-          // Thêm khoảng trống giữa các dòng (1 giây)
-          currentStartTime = lineEndTime + Math.round(1 * fps);
         }
       });
     });

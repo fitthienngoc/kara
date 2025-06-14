@@ -4,14 +4,14 @@ import { zColor } from "@remotion/zod-types";
 // Định nghĩa kiểu dữ liệu cho subtitle karaoke
 export interface KaraokeWord {
   word: string;
-  startTime: number; // Thời gian bắt đầu tính bằng frame
-  endTime: number; // Thời gian kết thúc tính bằng frame
+  startTime?: number; // Thời gian bắt đầu tính bằng frame
+  endTime?: number; // Thời gian kết thúc tính bằng frame
 }
 
 export interface KaraokeLine {
   words: KaraokeWord[];
-  startTime: number;
-  endTime: number;
+  startTime?: number;
+  endTime?: number;
   countDown: boolean;
 }
 
@@ -31,26 +31,15 @@ export const videoEditorSchema = z.object({
       words: z.array(
         z.object({
           word: z.string(),
-          startTime: z.number(),
-          endTime: z.number(),
+          startTime: z.number().optional(),
+          endTime: z.number().optional(),
         }),
       ),
-      startTime: z.number(),
-      endTime: z.number(),
+      startTime: z.number().optional(),
+      endTime: z.number().optional(),
       countDown: z.boolean().default(false),
     }),
   ),
-
-  // Màu sắc cho karaoke
-  // activeWordColor: zColor(),
-  // inactiveWordColor: zColor(),
-
-  // // Font và kích thước cho karaoke
-  // fontFamily: z.string().default("Arial"),
-  // fontSize: z.number().default(40),
-  // fontWeight: z.string().default("700"),
-  // textStroke: z.string().default("0px"),
-  // textStrokeColor: zColor().default("#000000"),
 
   // Thuộc tính cho FPS
   fps: z.number().default(30),
@@ -160,11 +149,15 @@ export function adjustKaraokeTimingForFps(
   return karaokeLines.map((line) => ({
     words: line.words.map((word) => ({
       word: word.word,
-      startTime: Math.round(word.startTime * ratio),
-      endTime: Math.round(word.endTime * ratio),
+      startTime: word?.startTime
+        ? Math.round(word?.startTime * ratio)
+        : undefined,
+      endTime: word?.endTime ? Math.round(word?.endTime * ratio) : undefined,
     })),
-    startTime: Math.round(line.startTime * ratio),
-    endTime: Math.round(line.endTime * ratio),
+    startTime: line?.startTime
+      ? Math.round(line?.startTime * ratio)
+      : undefined,
+    endTime: line?.endTime ? Math.round(line?.endTime * ratio) : undefined,
     countDown: line.countDown,
   }));
 }
