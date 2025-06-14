@@ -497,10 +497,13 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
                       if (e.key === "Enter") setEditingTabId(null);
                     }}
                     autoFocus
-                    className="px-1 py-0.5 text-sm text-white rounded"
+                    className="px-1 py-0.5 text-white rounded"
                   />
                 ) : (
-                  <span onDoubleClick={() => setEditingTabId(tab.id)}>
+                  <span
+                    className="text-sm"
+                    onDoubleClick={() => setEditingTabId(tab.id)}
+                  >
                     {tab.name}
                   </span>
                 )}

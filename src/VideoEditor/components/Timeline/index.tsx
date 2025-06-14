@@ -1,5 +1,5 @@
 /* eslint-disable @remotion/warn-native-media-tag */
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { KaraokeLine } from "../../constants";
 import useTimeLine from "./hooks";
 
@@ -22,12 +22,12 @@ interface LinePlacement {
 }
 
 export const Timeline: React.FC<TimelineProps> = ({
-    karaokeLines,
-    setKaraokeLines,
-    fps,
-    durationInFrames,
-    audioSrc,
-    onTimeChange,
+  karaokeLines,
+  setKaraokeLines,
+  fps,
+  durationInFrames,
+  audioSrc,
+  onTimeChange,
 }) => {
   const {
     currentTime,
@@ -59,54 +59,137 @@ export const Timeline: React.FC<TimelineProps> = ({
     onTimeChange,
   });
 
+  const [recording, setRecording] = useState(false);
+  const [currentLineIndex, setCurrentLineIndex] = useState<number | null>(null);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+
+  const handleWordTap = () => {
+    if (!recording || currentLineIndex === null) return;
+    setKaraokeLines((prevLines) => {
+      const lines = [...prevLines];
+      const line = { ...lines[currentLineIndex] };
+      const words = [...line.words];
+      if (currentWordIndex >= words.length) return prevLines;
+
+      const start = Math.round(currentTime * fps);
+      const duration = Math.round(0.3 * fps);
+
+      if (currentWordIndex === 0) {
+        words[currentWordIndex] = {
+          ...words[currentWordIndex],
+          startTime: start,
+          endTime: start + duration,
+        };
+      } else {
+        const prev = words[currentWordIndex - 1];
+        words[currentWordIndex] = {
+          ...words[currentWordIndex],
+          startTime: prev.endTime,
+          endTime: prev.endTime + duration,
+        };
+      }
+
+      line.words = words;
+      line.startTime = words[0].startTime;
+      line.endTime = words[words.length - 1].endTime;
+      lines[currentLineIndex] = line;
+      return lines;
+    });
+    const nextWordIndex = currentWordIndex + 1;
+    if (currentLineIndex !== null) {
+      const line = karaokeLines[currentLineIndex];
+      if (nextWordIndex >= line.words.length) {
+        // Move to next line or stop recording
+        if (currentLineIndex + 1 < karaokeLines.length) {
+          setCurrentLineIndex(currentLineIndex + 1);
+          setCurrentWordIndex(0);
+        } else {
+          setRecording(false);
+          setCurrentLineIndex(null);
+          setCurrentWordIndex(0);
+        }
+      } else {
+        setCurrentWordIndex(nextWordIndex);
+      }
+    }
+  };
+
+  const startRecording = () => {
+    if (currentLineIndex !== null) {
+      setRecording(true);
+      setCurrentWordIndex(0);
+    }
+  };
+
+  const stopRecording = () => {
+    setRecording(false);
+    setCurrentLineIndex(null);
+    setCurrentWordIndex(0);
+  };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.code === "Space" && recording) {
+        e.preventDefault();
+        handleWordTap();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [recording, currentWordIndex, currentLineIndex, currentTime]);
+
   // Số dòng tối đa để hiển thị
   const maxRows = 2;
-  
+
   // Tính toán phân bổ các dòng karaoke vào các hàng
   const distributeLinesToRows = (): LinePlacement[][] => {
     // Khởi tạo mảng với kiểu dữ liệu cụ thể
     const rows: LinePlacement[][] = Array(maxRows)
       .fill(null)
       .map(() => [] as LinePlacement[]);
-    
+
     karaokeLines.forEach((line, index) => {
       // Tính toán thời gian bắt đầu và kết thúc để xác định vị trí phù hợp
       const startPos = timeToPosition(frameToTime(line.startTime));
       const endPos = timeToPosition(frameToTime(line.endTime));
       const lineWidth = endPos - startPos;
-      
+
       // Tìm hàng phù hợp để đặt dòng karaoke
       let targetRow = index % maxRows; // Mặc định phân bổ đều
-      
+
       // Kiểm tra xem có thể đặt vào hàng nào mà không bị chồng lấn
       for (let i = 0; i < maxRows; i++) {
         const rowLines = rows[i];
         let canPlace = true;
-        
+
         for (const placedLine of rowLines) {
-          const placedStartPos = timeToPosition(frameToTime(placedLine.line.startTime));
-          const placedEndPos = timeToPosition(frameToTime(placedLine.line.endTime));
-          
+          const placedStartPos = timeToPosition(
+            frameToTime(placedLine.line.startTime),
+          );
+          const placedEndPos = timeToPosition(
+            frameToTime(placedLine.line.endTime),
+          );
+
           // Kiểm tra xem có bị chồng lấn không
           if (!(endPos < placedStartPos || startPos > placedEndPos)) {
             canPlace = false;
             break;
           }
         }
-        
+
         if (canPlace) {
           targetRow = i;
           break;
         }
       }
-      
+
       // Thêm dòng vào hàng đã chọn với kiểu dữ liệu rõ ràng
       rows[targetRow].push({
         line,
         lineIndex: index,
         startPos,
         endPos,
-        width: lineWidth
+        width: lineWidth,
       });
     });
     return rows;
@@ -117,9 +200,9 @@ export const Timeline: React.FC<TimelineProps> = ({
   return (
     <div className="mt-2 bg-gray-900 p-2 rounded-lg">
       {/* Controls */}
-      <div className="flex items-center mb-2 text-xs">
+      <div className="flex items-center mb-2 text-xs gap-3">
         <button
-          className={`px-1 py-0.5 rounded mr-1 flex items-center justify-center transition-colors text-[10px] ${
+          className={`px-1 py-0.5 rounded flex items-center justify-center transition-colors text-[10px] ${
             isPlaying
               ? "bg-red-500 hover:bg-red-600"
               : "bg-blue-500 hover:bg-blue-600"
@@ -161,7 +244,15 @@ export const Timeline: React.FC<TimelineProps> = ({
           )}
         </button>
 
-        <div className="text-white mr-2 font-mono text-[10px]">
+        <button
+          className={`px-1 py-0.5 rounded text-[10px] ${recording ? "bg-red-600" : "bg-green-600"} text-white`}
+          onClick={recording ? stopRecording : startRecording}
+          disabled={currentLineIndex === null}
+        >
+          {recording ? "⏹ Dừng ghi" : "🎙 Ghi từng từ"}
+        </button>
+
+        <div className="text-white font-mono text-[10px]">
           {Math.floor(currentTime / 60)}:
           {Math.floor(currentTime % 60)
             .toString()
@@ -172,7 +263,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             .padStart(2, "0")}
         </div>
 
-        <div className="flex items-center mr-2">
+        <div className="flex items-center">
           <input
             type="range"
             min="0.5"
@@ -182,7 +273,9 @@ export const Timeline: React.FC<TimelineProps> = ({
             onChange={handleZoomChange}
             className="w-20"
           />
-          <span className="text-white ml-1 text-[10px]">{zoom.toFixed(1)}x</span>
+          <span className="text-white ml-1 text-[10px]">
+            {zoom.toFixed(1)}x
+          </span>
         </div>
       </div>
 
@@ -205,7 +298,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             left: timeToPosition(currentTime),
             boxShadow: isPlaying ? "0 0 6px 1px rgba(255, 0, 0, 0.6)" : "none",
             transition: playheadDragging ? "none" : "left 0.1s ease-out",
-            height: 'calc(100% - 40px)'
+            height: "calc(100% - 40px)",
           }}
           onMouseDown={handlePlayheadMouseDown}
         >
@@ -274,6 +367,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                       e.stopPropagation();
                       handleMouseDown(e, "line", lineIndex);
                     }}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Ngăn sự kiện click lan truyền
+                      setCurrentLineIndex(lineIndex);
+                    }}
                   >
                     {line.words.map((word) => word.word).join(" ")}
                   </div>
@@ -288,6 +385,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                       e.stopPropagation();
                       handleMouseDown(e, "line", lineIndex, undefined, "start");
                     }}
+                    onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
                   ></div>
 
                   {/* Line end handle */}
@@ -300,6 +398,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                       e.stopPropagation();
                       handleMouseDown(e, "line", lineIndex, undefined, "end");
                     }}
+                    onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
                   ></div>
 
                   {/* Words */}
@@ -317,6 +416,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                         e.stopPropagation();
                         handleMouseDown(e, "word", lineIndex, wordIndex);
                       }}
+                      onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
                     >
                       {word.word}
 
@@ -325,8 +425,15 @@ export const Timeline: React.FC<TimelineProps> = ({
                         className="absolute left-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
                         onMouseDown={(e) => {
                           e.stopPropagation();
-                          handleMouseDown(e, "word", lineIndex, wordIndex, "start");
+                          handleMouseDown(
+                            e,
+                            "word",
+                            lineIndex,
+                            wordIndex,
+                            "start",
+                          );
                         }}
+                        onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
                       ></div>
 
                       {/* Word end handle */}
@@ -334,8 +441,15 @@ export const Timeline: React.FC<TimelineProps> = ({
                         className="absolute right-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
                         onMouseDown={(e) => {
                           e.stopPropagation();
-                          handleMouseDown(e, "word", lineIndex, wordIndex, "end");
+                          handleMouseDown(
+                            e,
+                            "word",
+                            lineIndex,
+                            wordIndex,
+                            "end",
+                          );
                         }}
+                        onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
                       ></div>
                     </div>
                   ))}
