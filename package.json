@@ -1,41 +1,59 @@
 {
-  "name": "kratest1",
-  "version": "1.0.0",
-  "description": "My Remotion video",
-  "repository": {},
-  "license": "UNLICENSED",
+  "name": "next-kra",
+  "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "Mohit Yadav",
+    "email": "mohit@mohitya.dev",
+    "url": "https://mohitya.dev"
+  },
   "dependencies": {
+    "@remotion/bundler": "4.0.314",
     "@remotion/cli": "4.0.314",
-    "@remotion/player": "^4.0.314",
+    "@remotion/google-fonts": "4.0.314",
+    "@remotion/lambda": "4.0.314",
+    "@remotion/paths": "4.0.314",
+    "@remotion/player": "4.0.314",
+    "@remotion/shapes": "4.0.314",
     "@remotion/tailwind-v4": "4.0.314",
-    "@remotion/zod-types": "4.0.314",
-    "clsx": "^2.1.1",
+    "clsx": "2.1.1",
     "file-saver": "^2.0.5",
+    "next": "15.2.4",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-router-dom": "^7.6.2",
     "remotion": "4.0.314",
-    "tailwindcss": "4.0.0",
+    "tailwind-merge": "3.0.1",
     "zod": "3.22.3"
   },
   "devDependencies": {
-    "@remotion/eslint-config-flat": "4.0.314",
+    "@eslint/eslintrc": "3.1.0",
+    "@next/eslint-plugin-next": "15.1.6",
+    "@remotion/eslint-plugin": "4.0.314",
+    "@swc/core": "^1.12.1",
     "@types/file-saver": "^2.0.7",
+    "@types/node": "20.12.14",
     "@types/react": "19.0.0",
+    "@types/react-dom": "19.0.0",
     "@types/web": "0.0.166",
+    "autoprefixer": "10.4.20",
+    "child_process": "^1.0.2",
+    "dotenv": "16.0.3",
     "eslint": "9.19.0",
+    "eslint-config-next": "15.1.6",
+    "ignore-loader": "^0.1.2",
+    "postcss": "8.4.47",
     "prettier": "3.3.3",
-    "typescript": "5.8.2"
+    "tailwindcss": "4.0.3",
+    "typescript": "5.8.2",
+    "uglify-js": "^3.19.3"
   },
   "scripts": {
-    "dev": "remotion studio",
-    "editor": "remotion studio --props='{\"editor\":true}'",
-    "build": "remotion bundle",
-    "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
-  },
-  "sideEffects": [
-    "*.css"
-  ]
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "remotion": "remotion studio",
+    "render": "remotion render",
+    "deploy": "node deploy.mjs"
+  }
 }
