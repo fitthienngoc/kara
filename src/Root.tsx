@@ -1,21 +1,28 @@
-import "./index.css";
 import { Composition } from "remotion";
-
+import "./index.css";
+import { DEFAULT_FPS, SAMPLE_KARAOKE_LINES } from "./VideoEditor/constants";
 import { VideoEditor } from "./VideoEditor/VideoEditor";
-import { SAMPLE_KARAOKE_LINES, DEFAULT_FPS } from "./VideoEditor/constants";
 
 // Each <Composition> is an entry in the sidebar!
 
-export const RemotionRoot: React.FC = () => {
+export const RemotionRoot = ({
+  durationInFrames,
+  height = 1080,
+  width = 1920,
+}: {
+  durationInFrames: number;
+  height?: number;
+  width?: number;
+}) => {
   return (
     <>
       <Composition
         id="KaraokeVideoEditor"
         component={VideoEditor}
-        durationInFrames={300}
+        durationInFrames={durationInFrames || DEFAULT_FPS * 10}
         fps={DEFAULT_FPS}
-        width={1920}
-        height={1080}
+        width={width}
+        height={height}
         defaultProps={{
           backgroundType: "color",
           backgroundColor: "#121212",

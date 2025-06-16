@@ -528,9 +528,10 @@ export default function useTimeLine({
     const updatedLines = [...karaokeLines];
     const { type, lineIndex, wordIndex, edge } = draggedItem;
 
+    const line = updatedLines[lineIndex];
     if (type === "line") {
-      const line = updatedLines[lineIndex];
-      if (!line) return;
+      if (!line || line.startTime === undefined || line.endTime === undefined)
+        return;
 
       if (edge === "start") {
         // Đảm bảo startTime không vượt quá endTime
@@ -559,15 +560,18 @@ export default function useTimeLine({
         // Cập nhật thời gian cho tất cả các từ
         const wordDuration = duration / line.words.length;
         line.words.forEach((word, idx) => {
+          if (line.startTime === undefined) return;
+
           word.startTime = line.startTime + idx * wordDuration;
           word.endTime = word.startTime + wordDuration;
         });
       }
     } else if (type === "word" && typeof wordIndex === "number") {
-      const line = updatedLines[lineIndex];
       if (!line || !line.words[wordIndex]) return;
 
       if (edge === "start") {
+        if (line.words[wordIndex].endTime === undefined) return;
+
         // Đảm bảo startTime không vượt quá endTime
         line.words[wordIndex].startTime = Math.min(
           newFrame,
@@ -579,6 +583,7 @@ export default function useTimeLine({
           line.startTime = line.words[wordIndex].startTime;
         }
       } else if (edge === "end") {
+        if (line.words[wordIndex].startTime === undefined) return;
         // Đảm bảo endTime không nhỏ hơn startTime
         line.words[wordIndex].endTime = Math.max(
           newFrame,
@@ -590,6 +595,11 @@ export default function useTimeLine({
           line.endTime = line.words[wordIndex].endTime;
         }
       } else {
+        if (
+          line.words[wordIndex].startTime === undefined ||
+          line.words[wordIndex].endTime === undefined
+        )
+          return;
         // Di chuyển cả từ
         const duration =
           line.words[wordIndex].endTime - line.words[wordIndex].startTime;
@@ -712,6 +722,7 @@ export default function useTimeLine({
     audioDuration,
     playheadDragging,
     isPlaying,
+    setIsPlaying,
     timelineRef,
     audioRef,
     canvasRef,

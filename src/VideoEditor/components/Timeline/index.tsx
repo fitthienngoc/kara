@@ -9,6 +9,7 @@ export interface TimelineProps {
   setKaraokeLines: React.Dispatch<React.SetStateAction<KaraokeLine[]>>;
   fps: number;
   durationInFrames: number;
+  setDurationInFrames: (frames: number) => void; // Thêm prop để cập nhật durationInFrames
   audioSrc: string;
   onTimeChange?: (timeInSeconds: number) => void;
 }
@@ -27,6 +28,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   setKaraokeLines,
   fps,
   durationInFrames,
+  setDurationInFrames, // Thêm prop để cập nhật durationInFrames
   audioSrc,
   onTimeChange,
 }) => {
@@ -58,11 +60,29 @@ export const Timeline: React.FC<TimelineProps> = ({
     durationInFrames,
     audioSrc,
     onTimeChange,
+    setDurationInFrames,
   });
 
   const [recording, setRecording] = useState(false);
   const [currentLineIndex, setCurrentLineIndex] = useState<number | null>(null);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
+
+  // Thêm state để chỉnh sửa thời lượng video
+  const [isEditingDuration, setIsEditingDuration] = useState(false);
+  const [customDuration, setCustomDuration] = useState(durationInFrames / fps);
+
+  // Hàm xử lý khi thay đổi thời lượng video
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDurationInSeconds = parseFloat(e.target.value);
+    setCustomDuration(newDurationInSeconds);
+  };
+
+  // Hàm áp dụng thời lượng mới
+  const applyCustomDuration = () => {
+    const newDurationInFrames = Math.round(customDuration * fps);
+    setDurationInFrames(newDurationInFrames);
+    setIsEditingDuration(false);
+  };
 
   const handleWordTap = () => {
     if (!recording || currentLineIndex === null) return;
@@ -386,6 +406,40 @@ export const Timeline: React.FC<TimelineProps> = ({
         >
           Optimize Timing
         </button>
+
+        {/* Thêm chức năng điều chỉnh độ dài video */}
+        <button
+          className="px-1 py-0.5 rounded text-[10px] bg-purple-500 text-white"
+          onClick={() => setIsEditingDuration(!isEditingDuration)}
+        >
+          {isEditingDuration ? "Hủy" : "Điều chỉnh độ dài"}
+        </button>
+
+        {isEditingDuration && (
+          <div className="flex items-center bg-gray-800 px-2 py-1 rounded">
+            <input
+              type="number"
+              min="1"
+              step="0.1"
+              className="w-16 h-5 text-[10px] bg-gray-700 text-white border border-gray-600 rounded px-1"
+              value={customDuration}
+              onChange={handleDurationChange}
+            />
+            <span className="text-white mx-1 text-[10px]">giây</span>
+            <button
+              className="px-1 py-0.5 rounded text-[10px] bg-blue-500 text-white ml-1"
+              onClick={applyCustomDuration}
+            >
+              Áp dụng
+            </button>
+          </div>
+        )}
+
+        {/* Hiển thị thông tin độ dài video */}
+        <div className="text-white font-mono text-[10px] ml-auto">
+          Video: {(durationInFrames / fps).toFixed(1)}s ({durationInFrames}{" "}
+          frames)
+        </div>
       </div>
 
       {/* Audio element (hidden) */}
@@ -420,6 +474,19 @@ export const Timeline: React.FC<TimelineProps> = ({
               transform: playheadDragging ? "scale(1.2)" : "scale(1)",
             }}
           ></div>
+        </div>
+
+        {/* Video Duration Marker */}
+        <div
+          className="absolute top-0 bottom-0 w-0.5 bg-purple-500 z-10"
+          style={{
+            left: timeToPosition(durationInFrames / fps),
+            height: "calc(100% - 40px)",
+          }}
+        >
+          <div className="absolute -top-4 -left-8 bg-purple-700 text-white text-[10px] px-1 py-0.5 rounded whitespace-nowrap">
+            End: {(durationInFrames / fps).toFixed(1)}s
+          </div>
         </div>
 
         {/* Time markers */}

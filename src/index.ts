@@ -1,6 +1,6 @@
 // npx remotion render <entry-file> HelloWorld out/video.mp4
 
-import { registerRoot } from "remotion";
+import { getInputProps, registerRoot } from "remotion";
 import { RemotionRoot } from "./Root";
 import React from "react";
 import { VideoEditorApp } from "./VideoEditorApp";
@@ -16,7 +16,13 @@ if (isEditorMode) {
 
 // Đăng ký Root component tùy thuộc vào chế độ
 if (!isEditorMode) {
-  registerRoot(RemotionRoot);
+  const inputProps = getInputProps();
+
+  registerRoot(() =>
+    React.createElement(RemotionRoot, {
+      durationInFrames: inputProps.durationInFrames as number,
+    }),
+  );
 } else {
   registerRoot(() => React.createElement(VideoEditorApp));
 }
