@@ -1,8 +1,8 @@
-/* eslint-disable @remotion/warn-native-media-tag */
 import React, { useState, useEffect } from "react";
 import { KaraokeLine } from "../../constants";
 import useTimeLine from "./hooks";
 import clsx from "clsx";
+import { Audio } from "remotion";
 
 export interface TimelineProps {
   karaokeLines: KaraokeLine[];
@@ -443,7 +443,12 @@ export const Timeline: React.FC<TimelineProps> = ({
       </div>
 
       {/* Audio element (hidden) */}
-      <audio
+      {/* <audio
+        ref={audioRef}
+        onTimeUpdate={handleTimeUpdate}
+        className="hidden"
+      /> */}
+      <Audio
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
         className="hidden"

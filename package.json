@@ -44,7 +44,7 @@
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
     "electron-dev": "concurrently \"yarn dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron-pack": "electron-builder build --mac --win --linux",
+    "electron-pack": "yarn build && electron-builder build --mac --win --linux",
     "postinstall": "electron-builder install-app-deps",
     "electron": "electron ."
   },
@@ -57,10 +57,26 @@
     "files": [
       "build/**/*",
       "node_modules/**/*",
-      "main.js"
+      "main.js",
+      "package.json"
     ],
     "directories": {
       "buildResources": "assets"
+    },
+    "extraMetadata": {
+      "main": "main.js"
     }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

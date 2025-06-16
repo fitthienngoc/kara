@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 
 // Kiểm tra xem có đang chạy trong Electron không
@@ -8,7 +7,7 @@ const isElectron = () => {
 
 interface ElectronRenderProps {
   saveSettings: () => void;
-  videoSettings: any;
+  videoSettings: unknown;
   audioFile: File | null;
 }
 
@@ -27,7 +26,7 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
       const { ipcRenderer } = window.require("electron");
 
       // Lắng nghe các sự kiện từ main process
-      ipcRenderer.on("render-log", (_event: any, message: string) => {
+      ipcRenderer.on("render-log", (_event: unknown, message: string) => {
         setRenderLog((prev) => [...prev, message]);
 
         // Phân tích log để cập nhật tiến trình
@@ -46,11 +45,11 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
         }
       });
 
-      ipcRenderer.on("render-error", (_event: any, message: any) => {
+      ipcRenderer.on("render-error", (_event: unknown, message: unknown) => {
         setRenderLog((prev) => [...prev, `ERROR: ${message}`]);
       });
 
-      ipcRenderer.on("render-complete", (_event: any, success: any) => {
+      ipcRenderer.on("render-complete", (_event: unknown, success: unknown) => {
         setIsRendering(false);
         setRenderLog((prev) => [
           ...prev,
