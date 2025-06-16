@@ -5,18 +5,23 @@
   "repository": {},
   "license": "UNLICENSED",
   "private": true,
+  "main": "main.js",
   "dependencies": {
+    "@electron/remote": "latest",
     "@remotion/cli": "4.0.314",
     "@remotion/player": "^4.0.314",
     "@remotion/tailwind-v4": "4.0.314",
     "@remotion/zod-types": "4.0.314",
     "clsx": "^2.1.1",
+    "electron": "latest",
+    "electron-builder": "latest",
     "file-saver": "^2.0.5",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-router-dom": "^7.6.2",
     "remotion": "4.0.314",
     "tailwindcss": "4.0.0",
+    "tree-kill": "^1.2.2",
     "zod": "3.22.3"
   },
   "devDependencies": {
@@ -24,18 +29,38 @@
     "@types/file-saver": "^2.0.7",
     "@types/react": "19.0.0",
     "@types/web": "0.0.166",
+    "concurrently": "^9.1.2",
+    "electron-is-dev": "latest",
     "eslint": "9.19.0",
     "prettier": "3.3.3",
-    "typescript": "5.8.2"
+    "react-scripts": "^5.0.1",
+    "typescript": "5.8.2",
+    "wait-on": "^8.0.3"
   },
   "scripts": {
     "dev": "remotion studio",
     "editor": "remotion studio --props='{\"editor\":true}'",
-    "build": "remotion bundle",
+    "build": "remotion bundle && react-scripts build",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "electron-dev": "concurrently \"yarn dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-pack": "electron-builder build --mac --win --linux",
+    "postinstall": "electron-builder install-app-deps",
+    "electron": "electron ."
   },
   "sideEffects": [
     "*.css"
-  ]
+  ],
+  "build": {
+    "appId": "com.kratest1.app",
+    "productName": "Karaoke Video Editor",
+    "files": [
+      "build/**/*",
+      "node_modules/**/*",
+      "main.js"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
+  }
 }

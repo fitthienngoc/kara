@@ -17,7 +17,12 @@ import {
 } from "./components/VideoEditor/constants/fonts";
 
 import { saveAs } from "file-saver";
+import { ElectronRender } from "./ElectronRender";
 
+export type TVideoSetting = {
+  width: number;
+  height: number;
+};
 export const VideoEditorApp: React.FC = () => {
   // State cho các thuộc tính của video
   const [backgroundType, setBackgroundType] = useState<
@@ -39,10 +44,11 @@ export const VideoEditorApp: React.FC = () => {
   const [showBasicSettings, setShowBasicSettings] = useState<boolean>(true);
   // State để kiểm soát hiển thị timeline
   const [showTimeline, setShowTimeline] = useState<boolean>(true);
-  // State để hiển thị lệnh render
-  const [renderCommand, setRenderCommand] = useState<string>("");
 
-  const [videoSettings] = useState({
+  // Thêm state để lưu file audio gốc
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+
+  const [videoSettings] = useState<TVideoSetting>({
     width: 1920,
     height: 1080,
   });
@@ -123,7 +129,7 @@ export const VideoEditorApp: React.FC = () => {
       backgroundType,
       backgroundSrc,
       backgroundColor,
-      audioSrc,
+      audioSrc: "", // Không lưu blob URL vào settings
       karaokeLines,
       fps,
       durationInFrames,
@@ -135,25 +141,6 @@ export const VideoEditorApp: React.FC = () => {
     });
 
     saveAs(blob, "video-settings.json");
-  };
-
-  const renderVideo = async () => {
-    // Đầu tiên, lưu cấu hình hiện tại vào file
-    saveSettings();
-
-    // Tạo lệnh render đúng cách
-    const command = `npx remotion render src/render.ts KaraokeVideoEditor --codec=h264 --props=./video-settings.json --output=./rendered-video.mp4`;
-
-    // Hiển thị lệnh render để người dùng có thể copy
-    setRenderCommand(command);
-
-    // Hiển thị thông báo cho người dùng
-    alert(
-      "Đã tạo lệnh render. Bạn có thể copy lệnh này và chạy trong terminal.\nLưu ý: Hãy chắc chắn rằng composition KaraokeVideoEditor trong src/index.ts đã được cập nhật để sử dụng durationInFrames từ props.",
-    );
-
-    // Log lệnh render ra console
-    console.log("Lệnh render:", command);
   };
 
   return (
@@ -190,6 +177,7 @@ export const VideoEditorApp: React.FC = () => {
                 audioSrc={audioSrc}
                 setAudioSrc={setAudioSrc}
                 audioInputRef={audioInputRef}
+                setAudioFile={setAudioFile}
               />
 
               {/* Phần FPS */}
@@ -211,28 +199,20 @@ export const VideoEditorApp: React.FC = () => {
             />
           </div>
 
-          <button
-            className="px-3 py-1 rounded text-sm bg-green-500 text-white"
-            onClick={renderVideo}
-          >
-            Ready Render
-          </button>
-          {renderCommand && (
-            <div className="mt-4 p-3 bg-gray-100 rounded border border-gray-300">
-              <p className="text-sm font-bold mb-1">
-                Lệnh render (click để copy):
-              </p>
-              <div
-                className="p-2 bg-gray-800 text-white rounded text-xs overflow-x-auto cursor-pointer"
-                onClick={() => {
-                  navigator.clipboard.writeText(renderCommand);
-                  alert("Đã copy lệnh render vào clipboard!");
-                }}
-              >
-                <code>{renderCommand}</code>
-              </div>
-            </div>
-          )}
+          <ElectronRender
+            saveSettings={saveSettings}
+            videoSettings={{
+              backgroundType,
+              backgroundSrc,
+              backgroundColor,
+              // Không truyền audioSrc vì nó là blob URL
+              karaokeLines,
+              fps,
+              durationInFrames,
+              ...videoSettings,
+            }}
+            audioFile={audioFile}
+          />
         </div>
 
         {/* Phần xem trước video và timeline */}
