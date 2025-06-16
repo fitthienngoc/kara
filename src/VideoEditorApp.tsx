@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Player, PlayerRef } from "@remotion/player";
-import { VideoEditor } from "./VideoEditor/VideoEditor";
-import { SAMPLE_KARAOKE_LINES, DEFAULT_FPS } from "./VideoEditor/constants";
-import { KaraokeLine } from "./VideoEditor/constants";
-import { BackgroundSettings } from "./VideoEditor/components/BackgroundSettings";
-import { AudioSettings } from "./VideoEditor/components/AudioSettings";
-import { VideoSettings } from "./VideoEditor/components/VideoSettings";
-import { LyricsEditor } from "./VideoEditor/components/LyricsEditor";
-import { Timeline } from "./VideoEditor/components/Timeline";
+import { VideoEditor } from "./components/VideoEditor/VideoEditor";
+import {
+  SAMPLE_KARAOKE_LINES,
+  DEFAULT_FPS,
+} from "./components/VideoEditor/constants";
+import { KaraokeLine } from "./components/VideoEditor/constants";
+import { BackgroundSettings } from "./components/VideoEditor/components/BackgroundSettings";
+import { AudioSettings } from "./components/VideoEditor/components/AudioSettings";
+import { VideoSettings } from "./components/VideoEditor/components/VideoSettings";
+import { LyricsEditor } from "./components/VideoEditor/components/LyricsEditor";
+import { Timeline } from "./components/VideoEditor/components/Timeline";
 import {
   VIETNAMESE_FONTS,
   GOOGLE_FONTS_URL,
-} from "./VideoEditor/constants/fonts";
+} from "./components/VideoEditor/constants/fonts";
 
 import { saveAs } from "file-saver";
 
@@ -139,7 +142,7 @@ export const VideoEditorApp: React.FC = () => {
     saveSettings();
 
     // Tạo lệnh render đúng cách
-    const command = `npx remotion render src/index.ts KaraokeVideoEditor --codec=h264 --props=./video-settings.json --fps=${fps} --output=./rendered-video.mp4`;
+    const command = `npx remotion render src/render.ts KaraokeVideoEditor --codec=h264 --props=./video-settings.json --output=./rendered-video.mp4`;
 
     // Hiển thị lệnh render để người dùng có thể copy
     setRenderCommand(command);

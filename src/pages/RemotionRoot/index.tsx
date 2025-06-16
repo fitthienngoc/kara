@@ -1,11 +1,13 @@
 import { Composition } from "remotion";
-import "./index.css";
-import { DEFAULT_FPS, SAMPLE_KARAOKE_LINES } from "./VideoEditor/constants";
-import { VideoEditor } from "./VideoEditor/VideoEditor";
+import {
+  DEFAULT_FPS,
+  SAMPLE_KARAOKE_LINES,
+} from "../../components/VideoEditor/constants";
+import { VideoEditor } from "../../components/VideoEditor/VideoEditor";
 
 // Each <Composition> is an entry in the sidebar!
 
-export const RemotionRoot = ({
+const RemotionRoot = ({
   durationInFrames,
   height = 1080,
   width = 1920,
@@ -33,3 +35,4 @@ export const RemotionRoot = ({
     </>
   );
 };
+export default RemotionRoot;
