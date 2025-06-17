@@ -37,7 +37,11 @@
     "@types/web": "0.0.166",
     "autoprefixer": "10.4.20",
     "child_process": "^1.0.2",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "dotenv": "16.0.3",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12",
     "eslint": "9.19.0",
     "eslint-config-next": "15.1.6",
     "ignore-loader": "^0.1.2",
@@ -45,7 +49,8 @@
     "prettier": "3.3.3",
     "tailwindcss": "4.0.3",
     "typescript": "5.8.2",
-    "uglify-js": "^3.19.3"
+    "uglify-js": "^3.19.3",
+    "wait-on": "^8.0.3"
   },
   "scripts": {
     "dev": "next dev",
@@ -54,6 +59,40 @@
     "lint": "next lint",
     "remotion": "remotion studio",
     "render": "remotion render",
-    "deploy": "node deploy.mjs"
-  }
+    "deploy": "node deploy.mjs",
+    "electron:build": "npm run build && electron-builder",
+    "electron-pack": "yarn build && electron-builder build --mac --win --linux",
+    "electron-mac": "yarn build && electron-builder build --mac",
+    "electron-win": "yarn build && electron-builder build --win",
+    "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:prod": "cross-env NODE_ENV=production electron ."
+  },
+  "build": {
+    "appId": "com.yourcompany.nextkra",
+    "productName": "Next-KRA",
+    "files": [
+      "out/**/*",
+      "main.js",
+      "preload.js"
+    ],
+    "directories": {
+      "buildResources": "public"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
+  },
+  "main": "main.js"
 }

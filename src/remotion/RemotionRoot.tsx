@@ -1,11 +1,12 @@
 "use client";
 
 import { Composition } from "remotion";
-import { VideoEditor } from "../app/_components/components";
+
 import {
   DEFAULT_FPS,
   SAMPLE_KARAOKE_LINES,
 } from "../app/_components/components/VideoEditor/constants";
+import { VideoEditor } from "../app/_components/components/VideoEditor/VideoEditor";
 
 // Each <Composition> is an entry in the sidebar!
 export const ID_KARAOKE_VIDEO_EDITOR = "KaraokeVideoEditor";

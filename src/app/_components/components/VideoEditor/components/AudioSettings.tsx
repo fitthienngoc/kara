@@ -6,12 +6,14 @@ interface AudioSettingsProps {
   audioSrc: string;
   setAudioSrc: (src: string) => void;
   audioInputRef: React.RefObject<HTMLInputElement | null>;
+  setAudioFile: (file: File | null) => void; // Thêm prop để lưu file gốc
 }
 
 export const AudioSettings: React.FC<AudioSettingsProps> = ({
   audioSrc,
   setAudioSrc,
   audioInputRef,
+  setAudioFile,
 }) => {
   const [audioError, setAudioError] = React.useState<string | null>(null);
   const [audioFileName, setAudioFileName] = React.useState<string>("");
@@ -46,6 +48,10 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({
       if (canPlay) {
         setAudioSrc(url);
         setAudioFileName(file.name);
+        // Lưu file gốc nếu có prop setAudioFile
+        if (setAudioFile) {
+          setAudioFile(file);
+        }
         console.log(
           `Đã tải file audio: ${file.name} (${file.type}, ${Math.round(file.size / 1024)} KB)`
         );

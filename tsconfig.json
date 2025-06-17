@@ -26,11 +26,12 @@
     "incremental": true
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "remotion/webpack-override.mjs"
+    "next-env.d.ts",
+    "remotion/webpack-override.mjs",
+    "out/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

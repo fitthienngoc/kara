@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { AbsoluteFill, useVideoConfig } from "remotion";
 import { Background } from "./Background";
@@ -9,7 +7,7 @@ import { videoEditorSchema } from "./constants";
 import { z } from "zod";
 
 // Component chính cho trình edit video
-const VideoEditor: React.FC<z.infer<typeof videoEditorSchema>> = ({
+export const VideoEditor: React.FC<z.infer<typeof videoEditorSchema>> = ({
   audioSrc,
   backgroundType,
   backgroundSrc,
@@ -51,5 +49,3 @@ const VideoEditor: React.FC<z.infer<typeof videoEditorSchema>> = ({
     </AbsoluteFill>
   );
 };
-
-export default VideoEditor;

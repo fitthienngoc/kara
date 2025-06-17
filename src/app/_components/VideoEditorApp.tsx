@@ -1,24 +1,34 @@
-import { PlayerRef, Player } from "@remotion/player";
-import { useState, useRef, useEffect } from "react";
-import { VideoEditor } from "../components";
-import { AudioSettings } from "../components/VideoEditor/components/AudioSettings";
-import { BackgroundSettings } from "../components/VideoEditor/components/BackgroundSettings";
-import { LyricsEditor } from "../components/VideoEditor/components/LyricsEditor";
-import { Timeline } from "../components/VideoEditor/components/Timeline";
-import { VideoSettings } from "../components/VideoEditor/components/VideoSettings";
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { Player, PlayerRef } from "@remotion/player";
+import { VideoEditor } from "./components/VideoEditor/VideoEditor";
 import {
-  KaraokeLine,
   SAMPLE_KARAOKE_LINES,
   DEFAULT_FPS,
-} from "../components/VideoEditor/constants";
+} from "./components/VideoEditor/constants";
+import { KaraokeLine } from "./components/VideoEditor/constants";
+import { BackgroundSettings } from "./components/VideoEditor/components/BackgroundSettings";
+import { AudioSettings } from "./components/VideoEditor/components/AudioSettings";
+import { VideoSettings } from "./components/VideoEditor/components/VideoSettings";
+import { LyricsEditor } from "./components/VideoEditor/components/LyricsEditor";
+import { Timeline } from "./components/VideoEditor/components/Timeline";
 import {
-  GOOGLE_FONTS_URL,
   VIETNAMESE_FONTS,
-} from "../components/VideoEditor/constants/fonts";
+  GOOGLE_FONTS_URL,
+} from "./components/VideoEditor/constants/fonts";
+
 import { saveAs } from "file-saver";
-import { ID_KARAOKE_VIDEO_EDITOR } from "../../../remotion/RemotionRoot";
+import { ElectronRender } from "./ElectronRender";
+
+export type TVideoSetting = {
+  width: number;
+  height: number;
+};
 
 const VideoEditorApp: React.FC = () => {
+  console.log("✅ VideoEditorApp is mounted");
+
   // State cho các thuộc tính của video
   const [backgroundType, setBackgroundType] = useState<
     "image" | "video" | "color"
@@ -39,10 +49,11 @@ const VideoEditorApp: React.FC = () => {
   const [showBasicSettings, setShowBasicSettings] = useState<boolean>(true);
   // State để kiểm soát hiển thị timeline
   const [showTimeline, setShowTimeline] = useState<boolean>(true);
-  // State để hiển thị lệnh render
-  const [renderCommand, setRenderCommand] = useState<string>("");
 
-  const [videoSettings] = useState({
+  // Thêm state để lưu file audio gốc
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+
+  const [videoSettings] = useState<TVideoSetting>({
     width: 1920,
     height: 1080,
   });
@@ -123,7 +134,7 @@ const VideoEditorApp: React.FC = () => {
       backgroundType,
       backgroundSrc,
       backgroundColor,
-      audioSrc,
+      audioSrc: "", // Không lưu blob URL vào settings
       karaokeLines,
       fps,
       durationInFrames,
@@ -135,25 +146,6 @@ const VideoEditorApp: React.FC = () => {
     });
 
     saveAs(blob, "video-settings.json");
-  };
-
-  const renderVideo = async () => {
-    // Đầu tiên, lưu cấu hình hiện tại vào file
-    saveSettings();
-
-    // Tạo lệnh render đúng cách
-    const command = `npx remotion render src/render.ts ${ID_KARAOKE_VIDEO_EDITOR} --codec=h264 --props=./video-settings.json --output=./rendered-video.mp4`;
-
-    // Hiển thị lệnh render để người dùng có thể copy
-    setRenderCommand(command);
-
-    // Hiển thị thông báo cho người dùng
-    alert(
-      "Đã tạo lệnh render. Bạn có thể copy lệnh này và chạy trong terminal.\nLưu ý: Hãy chắc chắn rằng composition KaraokeVideoEditor trong src/index.ts đã được cập nhật để sử dụng durationInFrames từ props.",
-    );
-
-    // Log lệnh render ra console
-    console.log("Lệnh render:", command);
   };
 
   return (
@@ -190,6 +182,7 @@ const VideoEditorApp: React.FC = () => {
                 audioSrc={audioSrc}
                 setAudioSrc={setAudioSrc}
                 audioInputRef={audioInputRef}
+                setAudioFile={setAudioFile}
               />
 
               {/* Phần FPS */}
@@ -211,28 +204,20 @@ const VideoEditorApp: React.FC = () => {
             />
           </div>
 
-          <button
-            className="px-3 py-1 rounded text-sm bg-green-500 text-white"
-            onClick={renderVideo}
-          >
-            Ready Render
-          </button>
-          {renderCommand && (
-            <div className="mt-4 p-3 bg-gray-100 rounded border border-gray-300">
-              <p className="text-sm font-bold mb-1">
-                Lệnh render (click để copy):
-              </p>
-              <div
-                className="p-2 bg-gray-800 text-white rounded text-xs overflow-x-auto cursor-pointer"
-                onClick={() => {
-                  navigator.clipboard.writeText(renderCommand);
-                  alert("Đã copy lệnh render vào clipboard!");
-                }}
-              >
-                <code>{renderCommand}</code>
-              </div>
-            </div>
-          )}
+          <ElectronRender
+            saveSettings={saveSettings}
+            videoSettings={{
+              backgroundType,
+              backgroundSrc,
+              backgroundColor,
+              // Không truyền audioSrc vì nó là blob URL
+              karaokeLines,
+              fps,
+              durationInFrames,
+              ...videoSettings,
+            }}
+            audioFile={audioFile}
+          />
         </div>
 
         {/* Phần xem trước video và timeline */}
