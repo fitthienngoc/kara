@@ -1,25 +1,24 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Player, PlayerRef } from "@remotion/player";
-import { VideoEditor } from "./components/VideoEditor/VideoEditor";
+import { PlayerRef } from "@remotion/player";
 import {
   SAMPLE_KARAOKE_LINES,
   DEFAULT_FPS,
-} from "./components/VideoEditor/constants";
-import { KaraokeLine } from "./components/VideoEditor/constants";
-import { BackgroundSettings } from "./components/VideoEditor/components/BackgroundSettings";
-import { AudioSettings } from "./components/VideoEditor/components/AudioSettings";
-import { VideoSettings } from "./components/VideoEditor/components/VideoSettings";
-import { LyricsEditor } from "./components/VideoEditor/components/LyricsEditor";
-import { Timeline } from "./components/VideoEditor/components/Timeline";
+} from "../components/VideoEditor/constants";
+import { KaraokeLine } from "../components/VideoEditor/constants";
+import { BackgroundSettings } from "../components/VideoEditor/components/BackgroundSettings";
+import { AudioSettings } from "../components/VideoEditor/components/AudioSettings";
+import { VideoSettings } from "../components/VideoEditor/components/VideoSettings";
+import { LyricsEditor } from "../components/VideoEditor/components/LyricsEditor";
 import {
   VIETNAMESE_FONTS,
   GOOGLE_FONTS_URL,
-} from "./components/VideoEditor/constants/fonts";
+} from "../components/VideoEditor/constants/fonts";
 
 import { saveAs } from "file-saver";
-import { ElectronRender } from "./ElectronRender";
+import { ElectronRender } from "../ElectronRender";
+import { PreviewNTimeLine } from "./components";
 
 export type TVideoSetting = {
   width: number;
@@ -100,15 +99,29 @@ const VideoEditorApp: React.FC = () => {
     }
   }, [audioSrc, fps]);
 
+  // Thêm useEffect mới để đảm bảo currentFrame không vượt quá durationInFrames - 1
+  useEffect(() => {
+    if (currentFrame >= durationInFrames) {
+      setCurrentFrame(Math.max(0, durationInFrames - 1));
+
+      // Đồng bộ với player nếu cần
+      if (playerRef.current) {
+        playerRef.current.seekTo(Math.max(0, durationInFrames - 1));
+      }
+    }
+  }, [durationInFrames, currentFrame]);
+
   // Xử lý khi Timeline thay đổi thời gian
   const handleTimelineTimeChange = (timeInSeconds: number) => {
     // Chuyển đổi thời gian thành frame
     const frame = Math.round(timeInSeconds * fps);
-    setCurrentFrame(frame);
+    // Đảm bảo frame không vượt quá durationInFrames - 1
+    const safeFrame = Math.min(frame, durationInFrames - 1);
+    setCurrentFrame(safeFrame);
 
     // Cập nhật vị trí của player
     if (playerRef.current) {
-      playerRef.current.seekTo(frame);
+      playerRef.current.seekTo(safeFrame);
     }
   };
 
@@ -221,66 +234,23 @@ const VideoEditorApp: React.FC = () => {
         </div>
 
         {/* Phần xem trước video và timeline */}
-        <div className="flex-1 p-4 flex flex-col overflow-hidden">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Preview</h2>
-            {audioSrc && (
-              <button
-                className="px-3 py-1 rounded text-sm bg-blue-500 text-white"
-                onClick={toggleTimeline}
-              >
-                {showTimeline ? "Ẩn Timeline" : "Hiện Timeline"}
-              </button>
-            )}
-          </div>
-
-          {/* Phần preview - điều chỉnh kích thước dựa vào timeline */}
-          <div
-            className="rounded-lg overflow-hidden relative"
-            style={{
-              flex: showTimeline && audioSrc ? "1 0 60%" : "1",
-              minHeight: "300px",
-            }}
-          >
-            <Player
-              ref={playerRef}
-              component={VideoEditor}
-              durationInFrames={durationInFrames}
-              fps={fps}
-              compositionWidth={videoSettings.width}
-              compositionHeight={videoSettings.height}
-              style={{
-                width: "100%",
-                height: "100%",
-              }}
-              // controls
-              initialFrame={currentFrame}
-              inputProps={{
-                backgroundType,
-                backgroundSrc,
-                backgroundColor,
-                audioSrc,
-                karaokeLines,
-                fps,
-              }}
-            />
-          </div>
-
-          {/* Timeline Component - có thể ẩn/hiện */}
-          {audioSrc && showTimeline && (
-            <div className="mt-4 overflow-hidden" style={{ maxHeight: "40%" }}>
-              <Timeline
-                karaokeLines={karaokeLines}
-                setKaraokeLines={setKaraokeLines}
-                fps={fps}
-                durationInFrames={durationInFrames}
-                setDurationInFrames={setDurationInFrames} // Thêm prop này
-                audioSrc={audioSrc}
-                onTimeChange={handleTimelineTimeChange}
-              />
-            </div>
-          )}
-        </div>
+        <PreviewNTimeLine
+          playerRef={playerRef}
+          currentFrame={currentFrame}
+          durationInFrames={durationInFrames}
+          setDurationInFrames={setDurationInFrames}
+          fps={fps}
+          videoSettings={videoSettings}
+          backgroundType={backgroundType}
+          backgroundSrc={backgroundSrc}
+          backgroundColor={backgroundColor}
+          audioSrc={audioSrc}
+          karaokeLines={karaokeLines}
+          setKaraokeLines={setKaraokeLines}
+          showTimeline={showTimeline}
+          toggleTimeline={toggleTimeline}
+          handleTimelineTimeChange={handleTimelineTimeChange}
+        />
       </div>
     </>
   );

@@ -1,7 +1,7 @@
-import { useAudioData, visualizeAudio } from "@remotion/media-utils";
 import { useState, useRef, useEffect } from "react";
-import { delayRender, continueRender, random } from "remotion";
 import { TimelineProps } from "..";
+
+// Thêm hàm này để tìm lũy thừa của 2 gần nhất
 
 export default function useTimeLine({
   karaokeLines,
@@ -48,9 +48,6 @@ export default function useTimeLine({
   const frameToTime = (frame: number) => frame / fps;
 
   // Sử dụng Remotion để lấy dữ liệu audio - luôn gọi hook, nhưng chỉ sử dụng kết quả khi có audioSrc
-  const audioData = useAudioData(audioSrc || "");
-
-  const hasValidAudioData = audioSrc && audioData;
 
   // Xử lý khi audio được tải
   useEffect(() => {
@@ -89,7 +86,7 @@ export default function useTimeLine({
   // Vẽ waveform khi có dữ liệu audio
   useEffect(() => {
     const drawWaveform = async () => {
-      if (!hasValidAudioData || !canvasRef.current) return;
+      if (!audioSrc || !canvasRef.current) return;
 
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
@@ -98,411 +95,180 @@ export default function useTimeLine({
       const width = (canvas.width = timelineWidth);
       const height = (canvas.height = 80);
 
+      // Xóa canvas
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#121212";
       ctx.fillRect(0, 0, width, height);
 
-      // Sử dụng visualizeAudio từ Remotion để tạo waveform
       try {
-        // Số lượng mẫu dựa trên độ rộng của canvas
-        const numberOfSamples = Math.min(width, 1000);
+        console.log("Bắt đầu tạo waveform cho:", audioSrc);
 
-        // Tạo handle để delay render nếu cần
-        const handle = delayRender("Visualizing audio");
+        // Tạo AudioContext mới
+        const audioContext = new (window.AudioContext ||
+          window.webkitAudioContext)();
 
-        // Tạo dữ liệu waveform từ audioData
-        const visualization = await visualizeAudio({
-          audioData,
-          numberOfSamples,
-          fps,
-          frame: 0, // Lấy toàn bộ audio
-        });
+        // Fetch audio file
+        const response = await fetch(audioSrc);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        // Tiếp tục render sau khi đã hoàn thành
-        continueRender(handle);
+        const arrayBuffer = await response.arrayBuffer();
+        console.log("Đã tải audio buffer, kích thước:", arrayBuffer.byteLength);
 
-        // Vẽ waveform với kiểu đối xứng
-        const barWidth = width / numberOfSamples;
+        // Decode audio data
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        console.log(
+          "Đã decode audio, duration:",
+          audioBuffer.duration,
+          "số kênh:",
+          audioBuffer.numberOfChannels,
+        );
+
+        // Lấy dữ liệu âm thanh (lấy kênh đầu tiên nếu stereo)
+        const channelData = audioBuffer.getChannelData(0);
+        console.log("Đã lấy channel data, số mẫu:", channelData.length);
+
+        // Xác định số lượng mẫu dựa trên độ rộng của canvas
+        const step = Math.ceil(channelData.length / width);
+        const samples = [];
+
+        // Xử lý dữ liệu âm thanh để giảm số lượng điểm vẽ
+        for (let i = 0; i < width; i++) {
+          const startIndex = Math.floor(i * step);
+          const endIndex = Math.min(startIndex + step, channelData.length);
+
+          // Tính peak (giá trị tuyệt đối lớn nhất) cho mỗi đoạn
+          let max = 0;
+          for (let j = startIndex; j < endIndex; j++) {
+            const amplitude = Math.abs(channelData[j]);
+            if (amplitude > max) max = amplitude;
+          }
+          samples.push(max);
+        }
+
+        console.log("Đã xử lý dữ liệu, số mẫu:", samples.length);
+        console.log("Giá trị mẫu (10 đầu tiên):", samples.slice(0, 10));
+
+        // Tìm giá trị peak để chuẩn hóa
+        const peak = Math.max(...samples) || 1;
+        console.log("Peak value:", peak);
+
+        // Vẽ waveform
+        const centerY = height / 2;
 
         // Tạo gradient cho phần trên
-        const gradientTop = ctx.createLinearGradient(0, 0, 0, height / 2);
-        gradientTop.addColorStop(0, "rgba(33, 150, 243, 0.7)"); // Xanh dương đậm ở trên cùng
-        gradientTop.addColorStop(1, "rgba(76, 175, 80, 0.3)"); // Xanh lá nhạt ở giữa
+        const gradientTop = ctx.createLinearGradient(0, 0, 0, centerY);
+        gradientTop.addColorStop(0, "rgba(33, 150, 243, 0.8)");
+        gradientTop.addColorStop(1, "rgba(76, 175, 80, 0.4)");
 
         // Tạo gradient cho phần dưới
-        const gradientBottom = ctx.createLinearGradient(
-          0,
-          height / 2,
-          0,
-          height,
-        );
-        gradientBottom.addColorStop(0, "rgba(76, 175, 80, 0.3)"); // Xanh lá nhạt ở giữa
-        gradientBottom.addColorStop(1, "rgba(33, 150, 243, 0.7)"); // Xanh dương đậm ở dưới cùng
+        const gradientBottom = ctx.createLinearGradient(0, centerY, 0, height);
+        gradientBottom.addColorStop(0, "rgba(76, 175, 80, 0.4)");
+        gradientBottom.addColorStop(1, "rgba(33, 150, 243, 0.8)");
 
-        // Vẽ nền
-        ctx.fillStyle = "rgba(20, 20, 20, 0.5)";
-        ctx.fillRect(0, 0, width, height);
+        // Vẽ waveform
+        // Phần trên của waveform
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
 
-        // Vẽ lưới
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-        ctx.lineWidth = 1;
+        for (let i = 0; i < samples.length; i++) {
+          const x = i;
+          // Tăng hệ số khuếch đại để waveform rõ ràng hơn
+          const amplifier = 1.5;
+          const normalizedValue = (samples[i] / peak) * amplifier;
+          // Đảm bảo waveform không vượt quá kích thước canvas
+          const y = Math.max(0, centerY - normalizedValue * centerY * 0.9);
 
-        // Vẽ lưới ngang
-        for (let i = 0; i < height; i += 10) {
-          ctx.beginPath();
-          ctx.moveTo(0, i);
-          ctx.lineTo(width, i);
-          ctx.stroke();
+          ctx.lineTo(x, y);
         }
 
-        // Vẽ lưới dọc
-        for (let i = 0; i < width; i += 50) {
-          ctx.beginPath();
-          ctx.moveTo(i, 0);
-          ctx.lineTo(i, height);
-          ctx.stroke();
-        }
-
-        // Vẽ đường trung tâm
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        ctx.lineTo(width, height / 2);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-        ctx.stroke();
-
-        // Vẽ sóng âm phần trên (phần dương)
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        visualization.forEach((sample, index) => {
-          const x = index * barWidth;
-          // Chỉ lấy giá trị dương của sample (0 đến 1)
-          const y = height / 2 - Math.abs(sample) * height * 0.4;
-
-          if (index === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            // Sử dụng bezierCurveTo để tạo đường cong mượt mà
-            const prevX = (index - 1) * barWidth;
-            const prevY =
-              height / 2 - Math.abs(visualization[index - 1]) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        });
-        ctx.lineTo(width, height / 2);
+        ctx.lineTo(width, centerY);
         ctx.closePath();
         ctx.fillStyle = gradientTop;
         ctx.fill();
 
-        // Vẽ đường viền phần trên
+        // Phần dưới của waveform
         ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        visualization.forEach((sample, index) => {
-          const x = index * barWidth;
-          const y = height / 2 - Math.abs(sample) * height * 0.4;
+        ctx.moveTo(0, centerY);
 
-          if (index === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            // Sử dụng bezierCurveTo để tạo đường cong mượt mà
-            const prevX = (index - 1) * barWidth;
-            const prevY =
-              height / 2 - Math.abs(visualization[index - 1]) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
+        for (let i = 0; i < samples.length; i++) {
+          const x = i;
+          const amplifier = 1.5;
+          const normalizedValue = (samples[i] / peak) * amplifier;
+          // Đảm bảo waveform không vượt quá kích thước canvas
+          const y = Math.min(height, centerY + normalizedValue * centerY * 0.9);
 
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        });
-        ctx.strokeStyle = "rgba(76, 175, 80, 0.8)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+          ctx.lineTo(x, y);
+        }
 
-        // Vẽ sóng âm phần dưới (phản chiếu)
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        visualization.forEach((sample, index) => {
-          const x = index * barWidth;
-          // Phản chiếu xuống dưới
-          const y = height / 2 + Math.abs(sample) * height * 0.4;
-
-          if (index === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            // Sử dụng bezierCurveTo để tạo đường cong mượt mà
-            const prevX = (index - 1) * barWidth;
-            const prevY =
-              height / 2 + Math.abs(visualization[index - 1]) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        });
-        ctx.lineTo(width, height / 2);
+        ctx.lineTo(width, centerY);
         ctx.closePath();
         ctx.fillStyle = gradientBottom;
         ctx.fill();
 
-        // Vẽ đường viền phần dưới
+        // Vẽ đường trung tâm
         ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        visualization.forEach((sample, index) => {
-          const x = index * barWidth;
-          const y = height / 2 + Math.abs(sample) * height * 0.4;
-
-          if (index === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            // Sử dụng bezierCurveTo để tạo đường cong mượt mà
-            const prevX = (index - 1) * barWidth;
-            const prevY =
-              height / 2 + Math.abs(visualization[index - 1]) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        });
-        ctx.strokeStyle = "rgba(33, 150, 243, 0.8)";
-        ctx.lineWidth = 1.5;
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Thêm hiệu ứng glow
-        ctx.shadowColor = "rgba(76, 175, 80, 0.5)";
-        ctx.shadowBlur = 5;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        visualization.forEach((sample, index) => {
-          const x = index * barWidth;
-          const y = height / 2 - Math.abs(sample) * height * 0.4;
-
-          if (index === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            const prevX = (index - 1) * barWidth;
-            const prevY =
-              height / 2 - Math.abs(visualization[index - 1]) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        });
-        ctx.strokeStyle = "rgba(76, 175, 80, 0.8)";
-        ctx.stroke();
-
-        // Reset shadow
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
+        console.log("Vẽ waveform hoàn tất");
       } catch (error) {
-        console.error("Không thể tạo waveform:", error);
+        console.error("Lỗi khi vẽ waveform:", error);
 
-        // Fallback: tạo waveform giả lập nếu không thể sử dụng Remotion
-        const sampleCount = Math.floor(audioDuration * 10);
-        const samples = Array.from({ length: sampleCount }, (_, i) => {
-          // Sử dụng random từ Remotion với seed là index để có kết quả xác định
-          return random(`waveform-${i}`) * 0.8 + 0.2;
-        });
+        // Fallback: vẽ waveform giả khi có lỗi
+        const centerY = height / 2;
 
-        // Vẽ waveform kiểu đối xứng với dữ liệu giả lập
-        const barWidth = width / sampleCount;
+        // Vẽ thông báo lỗi lên canvas
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.textAlign = "center";
+        ctx.fillText("Không thể hiển thị waveform", width / 2, centerY - 20);
 
-        // Tạo gradient cho phần trên
-        const gradientTop = ctx.createLinearGradient(0, 0, 0, height / 2);
-        gradientTop.addColorStop(0, "rgba(33, 150, 243, 0.7)");
-        gradientTop.addColorStop(1, "rgba(76, 175, 80, 0.3)");
-
-        // Tạo gradient cho phần dưới
-        const gradientBottom = ctx.createLinearGradient(
-          0,
-          height / 2,
-          0,
-          height,
-        );
-        gradientBottom.addColorStop(0, "rgba(76, 175, 80, 0.3)");
-        gradientBottom.addColorStop(1, "rgba(33, 150, 243, 0.7)");
-
-        // Vẽ nền
-        ctx.fillStyle = "rgba(20, 20, 20, 0.5)";
-        ctx.fillRect(0, 0, width, height);
-
-        // Vẽ lưới
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-        ctx.lineWidth = 1;
-
-        // Vẽ lưới ngang
-        for (let i = 0; i < height; i += 10) {
-          ctx.beginPath();
-          ctx.moveTo(0, i);
-          ctx.lineTo(width, i);
-          ctx.stroke();
-        }
-
-        // Vẽ lưới dọc
-        for (let i = 0; i < width; i += 50) {
-          ctx.beginPath();
-          ctx.moveTo(i, 0);
-          ctx.lineTo(i, height);
-          ctx.stroke();
-        }
-
-        // Vẽ đường trung tâm
+        // Vẽ một đường sóng giả đơn giản
         ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        ctx.lineTo(width, height / 2);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-        ctx.stroke();
+        ctx.moveTo(0, centerY);
 
-        // Vẽ sóng âm phần trên
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-
-        // Tạo các điểm điều khiển cho đường cong Bezier
-        for (let i = 0; i < samples.length; i++) {
-          const x = i * barWidth;
-          const amplitude = (samples[i] - 0.5) * 2; // Chuyển về dải -1 đến 1
-          const y = height / 2 - Math.abs(amplitude) * height * 0.4;
-
-          if (i === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            // Tạo đường cong mượt mà
-            const prevX = (i - 1) * barWidth;
-            const prevAmplitude = (samples[i - 1] - 0.5) * 2;
-            const prevY = height / 2 - Math.abs(prevAmplitude) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
+        for (let i = 0; i < width; i += 3) {
+          const randomHeight = Math.random() * (height / 4);
+          ctx.lineTo(i, centerY - randomHeight);
         }
-        ctx.lineTo(width, height / 2);
+
+        ctx.lineTo(width, centerY);
         ctx.closePath();
-        ctx.fillStyle = gradientTop;
+        ctx.fillStyle = "rgba(33, 150, 243, 0.4)";
         ctx.fill();
 
-        // Vẽ đường viền phần trên
+        // Phần dưới của waveform giả
         ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        for (let i = 0; i < samples.length; i++) {
-          const x = i * barWidth;
-          const amplitude = (samples[i] - 0.5) * 2;
-          const y = height / 2 - Math.abs(amplitude) * height * 0.4;
+        ctx.moveTo(0, centerY);
 
-          if (i === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            const prevX = (i - 1) * barWidth;
-            const prevAmplitude = (samples[i - 1] - 0.5) * 2;
-            const prevY = height / 2 - Math.abs(prevAmplitude) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
+        for (let i = 0; i < width; i += 3) {
+          const randomHeight = Math.random() * (height / 4);
+          ctx.lineTo(i, centerY + randomHeight);
         }
-        ctx.strokeStyle = "rgba(76, 175, 80, 0.8)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
 
-        // Vẽ sóng âm phần dưới (phản chiếu)
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        for (let i = 0; i < samples.length; i++) {
-          const x = i * barWidth;
-          const amplitude = (samples[i] - 0.5) * 2;
-          const y = height / 2 + Math.abs(amplitude) * height * 0.4;
-
-          if (i === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            const prevX = (i - 1) * barWidth;
-            const prevAmplitude = (samples[i - 1] - 0.5) * 2;
-            const prevY = height / 2 + Math.abs(prevAmplitude) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        }
-        ctx.lineTo(width, height / 2);
+        ctx.lineTo(width, centerY);
         ctx.closePath();
-        ctx.fillStyle = gradientBottom;
+        ctx.fillStyle = "rgba(76, 175, 80, 0.4)";
         ctx.fill();
-
-        // Vẽ đường viền phần dưới
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        for (let i = 0; i < samples.length; i++) {
-          const x = i * barWidth;
-          const amplitude = (samples[i] - 0.5) * 2;
-          const y = height / 2 + Math.abs(amplitude) * height * 0.4;
-
-          if (i === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            const prevX = (i - 1) * barWidth;
-            const prevAmplitude = (samples[i - 1] - 0.5) * 2;
-            const prevY = height / 2 + Math.abs(prevAmplitude) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        }
-        ctx.strokeStyle = "rgba(33, 150, 243, 0.8)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Thêm hiệu ứng glow
-        ctx.shadowColor = "rgba(76, 175, 80, 0.5)";
-        ctx.shadowBlur = 5;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        for (let i = 0; i < samples.length; i++) {
-          const x = i * barWidth;
-          const amplitude = (samples[i] - 0.5) * 2;
-          const y = height / 2 - Math.abs(amplitude) * height * 0.4;
-
-          if (i === 0) {
-            ctx.lineTo(x, y);
-          } else {
-            const prevX = (i - 1) * barWidth;
-            const prevAmplitude = (samples[i - 1] - 0.5) * 2;
-            const prevY = height / 2 - Math.abs(prevAmplitude) * height * 0.4;
-            const cpX1 = prevX + (x - prevX) / 3;
-            const cpX2 = prevX + ((x - prevX) * 2) / 3;
-
-            ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-          }
-        }
-        ctx.strokeStyle = "rgba(76, 175, 80, 0.8)";
-        ctx.stroke();
-
-        // Reset shadow
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
       }
     };
 
-    if (hasValidAudioData && audioLoaded && audioDuration > 0) {
+    // Chỉ vẽ waveform khi có audioSrc và canvas đã được khởi tạo
+    if (audioSrc && canvasRef.current) {
+      console.log("Gọi drawWaveform với audioSrc:", audioSrc);
       drawWaveform();
+    } else {
+      console.log("Không thể vẽ waveform: audioSrc hoặc canvas không tồn tại", {
+        audioSrc: Boolean(audioSrc),
+        canvas: Boolean(canvasRef.current),
+      });
     }
-  }, [
-    audioData,
-    audioLoaded,
-    audioDuration,
-    timelineWidth,
-    fps,
-    hasValidAudioData,
-  ]);
+  }, [audioSrc, timelineWidth, canvasRef]);
 
   // Xử lý khi kéo thả các phần tử
   const handleMouseDown = (

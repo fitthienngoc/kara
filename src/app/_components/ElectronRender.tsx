@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 
 // Kiểm tra xem có đang chạy trong Electron không
 const isElectron = () => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
   // Kiểm tra sự tồn tại của biến isElectronApp đã được expose từ preload.js
   return window?.electron?.isElectronApp === true;
 };

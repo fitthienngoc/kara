@@ -13,6 +13,7 @@ import {
 import { tmpdir } from "os";
 import path from "path";
 import kill from "tree-kill";
+import isDev from "./types/constants";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +33,6 @@ function createWindow() {
     },
   });
 
-  const isDev = process.env.NODE_ENV !== "production";
   // URL để load
   const startUrl = isDev
     ? "http://localhost:3000" // URL dev server

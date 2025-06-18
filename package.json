@@ -53,7 +53,7 @@
     "wait-on": "^8.0.3"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "cross-env NODE_ENV=development next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

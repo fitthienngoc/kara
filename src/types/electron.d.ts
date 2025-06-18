@@ -4,7 +4,11 @@ interface Window {
     ipc: {
       send: (channel: string, data: unknown) => void;
       invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
-      on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
+      on: (
+        channel: string,
+        callback: (...args: unknown[]) => void,
+      ) => () => void;
     };
   };
+  webkitAudioContext?: typeof AudioContext;
 }
