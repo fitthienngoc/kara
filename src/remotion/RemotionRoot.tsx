@@ -1,27 +1,39 @@
 "use client";
 
 import { Composition } from "remotion";
-
+import { useEffect } from "react";
+import { loadAllFonts } from "../app/_components/components/VideoEditor/utils/fontLoader";
 import {
   DEFAULT_FPS,
   SAMPLE_KARAOKE_LINES,
 } from "../app/_components/components/VideoEditor/constants";
 import { VideoEditor } from "../app/_components/components/VideoEditor/VideoEditor";
 
-// Each <Composition> is an entry in the sidebar!
+// Component chuyên dụng để tải font
+const FontLoader = () => {
+  useEffect(() => {
+    loadAllFonts();
+  }, []);
+  return null;
+};
+
+// Mỗi <Composition> là một mục trong sidebar!
 export const ID_KARAOKE_VIDEO_EDITOR = "KaraokeVideoEditor";
 
 const RemotionRoot = ({
   durationInFrames,
-  height = 1080,
-  width = 1920,
+  height,
+  width,
 }: {
   durationInFrames: number;
-  height?: number;
-  width?: number;
+  height: number;
+  width: number;
 }) => {
   return (
     <>
+      {/* Thêm FontLoader để tải font trước khi render */}
+      <FontLoader />
+
       <Composition
         id={ID_KARAOKE_VIDEO_EDITOR}
         component={VideoEditor}
@@ -39,4 +51,5 @@ const RemotionRoot = ({
     </>
   );
 };
+
 export default RemotionRoot;

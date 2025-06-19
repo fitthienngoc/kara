@@ -16,7 +16,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
       }
     },
     invoke: (channel, ...args) => {
-      const validChannels = ["show-save-dialog"];
+      // Thêm "open-output-folder" vào danh sách kênh hợp lệ
+      const validChannels = [
+        "show-save-dialog",
+        "open-output-folder",
+        "open-directory",
+      ];
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args);
       }

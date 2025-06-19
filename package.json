@@ -66,8 +66,8 @@
     "electron-pack": "yarn build && electron-builder build --mac --win --linux",
     "electron-mac": "yarn build && electron-builder build --mac",
     "electron-win": "yarn build && electron-builder build --win",
-    "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:prod": "cross-env NODE_ENV=production electron ."
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:prod": "next build && cross-env NODE_ENV=production electron ."
   },
   "build": {
     "appId": "com.yourcompany.nextkra",

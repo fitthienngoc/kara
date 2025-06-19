@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, shell } from "electron";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
@@ -33,7 +33,7 @@ function createWindow() {
   });
 
   // console.log("process.env", process.env);
-  const isDev = false;
+  const isDev = process.env !== 'production';
   // URL để load
   const startUrl = isDev
     ? "http://localhost:3000"
@@ -65,7 +65,7 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("ready", createWindow);
+// app.on("ready", createWindow);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
@@ -274,4 +274,47 @@ ipcMain.handle("show-save-dialog", async (event, options) => {
   });
 
   return result.filePath;
+});
+
+// Thêm handler để mở thư mục chứa file
+ipcMain.handle("open-output-folder", async (event, filePath) => {
+  try {
+    console.log("Opening folder containing:", filePath);
+
+    // Lấy đường dẫn thư mục từ đường dẫn file
+    const directory = path.dirname(filePath);
+
+    // Kiểm tra xem thư mục có tồn tại không
+    if (existsSync(directory)) {
+      // Mở thư mục trong trình quản lý tệp mặc định của hệ điều hành
+      await shell.showItemInFolder(filePath);
+      return { success: true, message: "Folder opened successfully" };
+    } else {
+      console.error("Directory does not exist:", directory);
+      return { success: false, message: "Directory does not exist" };
+    }
+  } catch (error) {
+    console.error("Error opening folder:", error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Thêm vào main.js
+ipcMain.handle("open-directory", async (event, directoryPath) => {
+  try {
+    console.log("Opening directory:", directoryPath);
+
+    // Kiểm tra xem thư mục có tồn tại không
+    if (existsSync(directoryPath)) {
+      // Mở thư mục trong trình quản lý tệp mặc định của hệ điều hành
+      await shell.openPath(directoryPath);
+      return { success: true, message: "Directory opened successfully" };
+    } else {
+      console.error("Directory does not exist:", directoryPath);
+      return { success: false, message: "Directory does not exist" };
+    }
+  } catch (error) {
+    console.error("Error opening directory:", error);
+    return { success: false, message: error.message };
+  }
 });

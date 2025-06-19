@@ -52,7 +52,7 @@ const VideoEditorApp: React.FC = () => {
   // Thêm state để lưu file audio gốc
   const [audioFile, setAudioFile] = useState<File | null>(null);
 
-  const [videoSettings] = useState<TVideoSetting>({
+  const [videoSettings, setVideoSettings] = useState<TVideoSetting>({
     width: 1920,
     height: 1080,
   });
@@ -229,7 +229,9 @@ const VideoEditorApp: React.FC = () => {
               durationInFrames,
               ...videoSettings,
             }}
+            setVideoSettings={setVideoSettings}
             audioFile={audioFile}
+            setFps={setFps}
           />
         </div>
 
