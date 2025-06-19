@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { zColor } from "@remotion/zod-types";
+import { TextStyle } from "./types";
 
 // Định nghĩa kiểu dữ liệu cho subtitle karaoke
 export interface KaraokeWord {
@@ -9,11 +10,60 @@ export interface KaraokeWord {
 }
 
 export interface KaraokeLine {
-  words: KaraokeWord[];
+  // Các thuộc tính hiện có
   startTime?: number;
   endTime?: number;
-  countDown: boolean;
+  words: Array<{
+    word: string;
+    startTime?: number;
+    endTime?: number;
+    style?: Partial<TextStyle>;
+  }>;
+  countDown?: boolean;
+  style?: Partial<TextStyle>;
+  // Thêm thuộc tính position
+  position?: {
+    x: number;
+    y: number;
+  };
 }
+
+// Assuming TextStyle is already defined elsewhere
+// If not, you'll need to define it as a Zod schema first
+const TextStyleZ = z
+  .object({
+    // Define your TextStyle properties here
+    // For example:
+    // fontFamily: z.string().optional(),
+    // fontSize: z.number().optional(),
+    // color: z.string().optional(),
+    // etc.
+  })
+  .partial();
+
+// Define the position schema
+const Position = z.object({
+  x: z.number(),
+  y: z.number(),
+});
+
+// Define the word schema
+const Word = z.object({
+  word: z.string(),
+  startTime: z.number().optional(),
+  endTime: z.number().optional(),
+  style: TextStyleZ.optional(),
+});
+
+// Main schema
+const KaraokeLineSchema = z.object({
+  startTime: z.number().optional(),
+  endTime: z.number().optional(),
+  words: z.array(Word),
+  countDown: z.boolean().optional(),
+  style: TextStyleZ.optional(),
+  position: Position.optional(),
+});
 
 // Schema cho VideoEditor
 export const videoEditorSchema = z.object({
@@ -26,20 +76,7 @@ export const videoEditorSchema = z.object({
   backgroundColor: zColor().default("#000000"),
 
   // Thuộc tính cho karaoke
-  karaokeLines: z.array(
-    z.object({
-      words: z.array(
-        z.object({
-          word: z.string(),
-          startTime: z.number().optional(),
-          endTime: z.number().optional(),
-        }),
-      ),
-      startTime: z.number().optional(),
-      endTime: z.number().optional(),
-      countDown: z.boolean().default(false),
-    }),
-  ),
+  karaokeLines: z.array(KaraokeLineSchema),
 
   // Thuộc tính cho FPS
   fps: z.number().default(30),

@@ -134,6 +134,7 @@ export default function PreviewTimeLine({
             audioSrc,
             karaokeLines,
             fps,
+            setKaraokeLines,
           }}
         />
       </div>

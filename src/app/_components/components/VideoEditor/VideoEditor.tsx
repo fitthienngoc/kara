@@ -3,17 +3,22 @@ import { AbsoluteFill, useVideoConfig } from "remotion";
 import { Background } from "./Background";
 import { AudioTrack } from "./AudioTrack";
 import { KaraokeSubtitle } from "./KaraokeSubtitle";
-import { videoEditorSchema } from "./constants";
+import { KaraokeLine, videoEditorSchema } from "./constants";
 import { z } from "zod";
 
 // Component chính cho trình edit video
-export const VideoEditor: React.FC<z.infer<typeof videoEditorSchema>> = ({
+export const VideoEditor: React.FC<
+  z.infer<typeof videoEditorSchema> & {
+    setKaraokeLines?: React.Dispatch<React.SetStateAction<KaraokeLine[]>>;
+  }
+> = ({
   audioSrc,
   backgroundType,
   backgroundSrc,
   backgroundColor,
   karaokeLines,
   fps = 30,
+  setKaraokeLines,
 }) => {
   const { fps: remotionFps } = useVideoConfig();
 
@@ -45,7 +50,11 @@ export const VideoEditor: React.FC<z.infer<typeof videoEditorSchema>> = ({
       )}
 
       {/* Hiển thị subtitle dạng karaoke */}
-      <KaraokeSubtitle lines={karaokeLines} />
+      <KaraokeSubtitle
+        lines={karaokeLines}
+        editable
+        setKaraokeLines={setKaraokeLines}
+      />
     </AbsoluteFill>
   );
 };
