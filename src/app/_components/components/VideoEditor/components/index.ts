@@ -1,0 +1,1 @@
+export { KaraokeSubtitle } from "./KaraokeSubtitle";

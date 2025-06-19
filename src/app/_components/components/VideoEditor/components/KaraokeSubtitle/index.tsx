@@ -9,18 +9,18 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useDraggable } from "@dnd-kit/core";
+
+import clsx from "clsx";
+import { KaraokeEffectType, useKaraokeEffect } from "./hooks/useKaraokeEffect";
 import {
+  KaraokeLine,
+  DEFAULT_INACTIVE_COLOR,
   DEFAULT_ACTIVE_COLOR,
   DEFAULT_FONT_FAMILY,
   DEFAULT_FONT_SIZE,
   DEFAULT_FONT_WEIGHT,
-  DEFAULT_INACTIVE_COLOR,
-  DEFAULT_TEXT_STROKE,
-  DEFAULT_TEXT_STROKE_COLOR,
-  KaraokeLine,
-} from "./constants";
-import { KaraokeLineWithStyle, TextStyle } from "./types";
-import clsx from "clsx";
+} from "../../constants";
+import { KaraokeLineWithStyle, TextStyle } from "../../types";
 
 // Mở rộng interface KaraokeLine để thêm thuộc tính position
 interface KaraokeLineWithPosition extends KaraokeLine {
@@ -34,6 +34,7 @@ interface KaraokeSubtitleProps {
   lines: KaraokeLineWithPosition[];
   setKaraokeLines?: React.Dispatch<React.SetStateAction<KaraokeLine[]>>;
   editable?: boolean;
+  effectType?: KaraokeEffectType;
 }
 
 // Component cho dòng karaoke có thể kéo thả
@@ -81,6 +82,7 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
   lines,
   setKaraokeLines,
   editable = false,
+  effectType = "default",
 }) => {
   const frame = useCurrentFrame();
   // Thời gian hiển thị trước (tính bằng frames) - mặc định là 3 giây (90 frames ở 30fps)
@@ -149,6 +151,14 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
     (line) => line.startTime !== undefined && line.endTime !== undefined,
   );
 
+  // Sử dụng hook hiệu ứng karaoke
+  const { cssStyles, getWordStyle } = useKaraokeEffect({
+    effectType,
+    frame,
+    lines: currentLines as KaraokeLineWithStyle[],
+    fps: 30,
+  });
+
   // Xử lý sự kiện khi kết thúc kéo
   const handleDragEnd = (event: DragEndEvent) => {
     if (!setKaraokeLines) return;
@@ -187,95 +197,9 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
     });
   };
 
-  // Tạo style cho hiệu ứng karaoke
-  const createKaraokeStyles = () => {
-    let styles = "";
-
-    // Tạo animation cho mỗi từ
-    currentLines.forEach((line, lineIndex) => {
-      const lineWithStyle = line as KaraokeLineWithStyle;
-      const lineStyle = lineWithStyle.style || ({} as Partial<TextStyle>);
-
-      line.words.forEach((word, wordIndex) => {
-        const wordWithStyle = word as KaraokeLineWithStyle["words"][0];
-        const wordStyle =
-          wordWithStyle.style || lineStyle || ({} as Partial<TextStyle>);
-
-        // Sử dụng style của từ/dòng nếu có, nếu không sử dụng giá trị mặc định
-        const activeColor =
-          wordStyle.activeColor ||
-          lineStyle.activeColor ||
-          DEFAULT_ACTIVE_COLOR;
-        const inactiveColor =
-          wordStyle.inactiveColor ||
-          lineStyle.inactiveColor ||
-          DEFAULT_INACTIVE_COLOR;
-        const wordTextStroke =
-          wordStyle.textStroke || lineStyle.textStroke || DEFAULT_TEXT_STROKE;
-        const wordTextStrokeColor =
-          wordStyle.textStrokeColor ||
-          lineStyle.textStrokeColor ||
-          DEFAULT_TEXT_STROKE_COLOR;
-
-        const wordKey = `line${lineIndex}-word${wordIndex}`;
-
-        const duration =
-          word.startTime !== undefined && word.endTime !== undefined
-            ? word.endTime - word.startTime
-            : 0;
-
-        if (
-          duration > 0 &&
-          word.startTime !== undefined &&
-          word.endTime !== undefined &&
-          frame >= word.startTime &&
-          frame < word.endTime
-        ) {
-          const remainingDuration = (word.endTime - frame) / 60; // Chuyển đổi frame sang giây (giả sử 60fps)
-
-          styles += `
-            @keyframes highlight-${wordKey} {
-              from { width: ${((frame - word.startTime) / duration) * 100}%; }
-              to { width: 100%; }
-            }
-            
-            .word-${wordKey}::after {
-              animation: highlight-${wordKey} ${remainingDuration}s linear forwards;
-            }
-          `;
-        }
-
-        // Style riêng cho từng từ
-        styles += `
-          .word-${wordKey} {
-            color: ${inactiveColor};
-            -webkit-text-stroke: ${wordTextStroke} ${wordTextStrokeColor};
-          }
-          
-          .word-${wordKey}::after {
-            color: ${activeColor};
-            -webkit-text-stroke: ${wordTextStroke} ${wordTextStrokeColor};
-          }
-        `;
-      });
-    });
-
-    // Style chung cho tất cả các từ
-    styles += `
-      .karaoke-word {
-        position: relative;
-        white-space: nowrap;
-      }
-      
-      .karaoke-word::after {
-        content: attr(data-text);
-        position: absolute;
-        left: 0;
-        top: 0;
-        overflow: hidden;
-        width: 0;
-      }
-      
+  // Tạo style cho các chấm đếm ngược và các phần tử khác
+  const createBaseStyles = () => {
+    return `
       .countdown-dot {
         display: inline-block;
         width: 0.5em;
@@ -307,7 +231,6 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
       .karaoke-line-container {
         cursor: ${editable ? "move" : "default"};
         user-select: none;
-
         border-radius: 4px;
         padding: 2px;
         touch-action: none;
@@ -323,8 +246,6 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
         ${editable ? "box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);" : ""}
       }
     `;
-
-    return styles;
   };
 
   // Xác định trạng thái của các chấm đếm ngược
@@ -355,7 +276,8 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
 
   return (
     <>
-      <style>{createKaraokeStyles()}</style>
+      <style>{createBaseStyles()}</style>
+      <style>{cssStyles}</style>
       <DndContext
         sensors={sensors}
         onDragEnd={handleDragEnd}
@@ -451,58 +373,29 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
                       )}
 
                       {line.words.map((word, wordIndex) => {
-                        const wordWithStyle =
-                          word as KaraokeLineWithStyle["words"][0];
-                        const wordStyle =
-                          wordWithStyle.style ||
-                          lineStyle ||
-                          ({} as Partial<TextStyle>);
-
-                        // Sử dụng style của từ/dòng nếu có, nếu không sử dụng giá trị mặc định
-                        const activeColor =
-                          wordStyle.activeColor ||
-                          lineStyle.activeColor ||
-                          DEFAULT_ACTIVE_COLOR;
-
-                        const wordKey = `line${lineIndex}-word${wordIndex}`;
-
-                        // Xác định trạng thái của từ
-                        let width = "0%";
-                        if (
-                          word.startTime !== undefined &&
-                          word.endTime !== undefined
-                        ) {
-                          if (frame > word.endTime) {
-                            width = "100%";
-                          } else if (frame >= word.startTime) {
-                            const duration = word.endTime - word.startTime;
-                            width =
-                              duration > 0
-                                ? `${((frame - word.startTime) / duration) * 100}%`
-                                : "100%";
-                          }
-                        }
+                        const wordStyle = getWordStyle(
+                          lineWithStyle,
+                          word as KaraokeLineWithStyle["words"][0],
+                          lineIndex,
+                          wordIndex,
+                        );
 
                         return (
                           <span
                             key={wordIndex}
-                            className={`karaoke-word word-${wordKey} mr-2 inline-block`}
+                            className={wordStyle.containerClassName}
+                            style={wordStyle.containerStyle}
                             data-text={word.word}
                           >
                             {word.word}
-                            <span
-                              style={{
-                                position: "absolute",
-                                left: 0,
-                                top: 0,
-                                color: activeColor,
-                                overflow: "hidden",
-                                width: width,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {word.word}
-                            </span>
+                            {wordStyle.renderHighlight && (
+                              <span
+                                className={wordStyle.highlightClassName}
+                                style={wordStyle.highlightStyle}
+                              >
+                                {word.word}
+                              </span>
+                            )}
                           </span>
                         );
                       })}
@@ -557,58 +450,29 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
                       )}
 
                       {line.words.map((word, wordIndex) => {
-                        const wordWithStyle =
-                          word as KaraokeLineWithStyle["words"][0];
-                        const wordStyle =
-                          wordWithStyle.style ||
-                          lineStyle ||
-                          ({} as Partial<TextStyle>);
-
-                        // Sử dụng style của từ/dòng nếu có, nếu không sử dụng giá trị mặc định
-                        const activeColor =
-                          wordStyle.activeColor ||
-                          lineStyle.activeColor ||
-                          DEFAULT_ACTIVE_COLOR;
-
-                        const wordKey = `line${lineIndex}-word${wordIndex}`;
-
-                        // Xác định trạng thái của từ
-                        let width = "0%";
-                        if (
-                          word.startTime !== undefined &&
-                          word.endTime !== undefined
-                        ) {
-                          if (frame > word.endTime) {
-                            width = "100%";
-                          } else if (frame >= word.startTime) {
-                            const duration = word.endTime - word.startTime;
-                            width =
-                              duration > 0
-                                ? `${((frame - word.startTime) / duration) * 100}%`
-                                : "100%";
-                          }
-                        }
+                        const wordStyle = getWordStyle(
+                          lineWithStyle,
+                          word as KaraokeLineWithStyle["words"][0],
+                          lineIndex,
+                          wordIndex,
+                        );
 
                         return (
                           <span
                             key={wordIndex}
-                            className={`karaoke-word word-${wordKey} mr-2 inline-block`}
+                            className={wordStyle.containerClassName}
+                            style={wordStyle.containerStyle}
                             data-text={word.word}
                           >
                             {word.word}
-                            <span
-                              style={{
-                                position: "absolute",
-                                left: 0,
-                                top: 0,
-                                color: activeColor,
-                                overflow: "hidden",
-                                width: width,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {word.word}
-                            </span>
+                            {wordStyle.renderHighlight && (
+                              <span
+                                className={wordStyle.highlightClassName}
+                                style={wordStyle.highlightStyle}
+                              >
+                                {word.word}
+                              </span>
+                            )}
                           </span>
                         );
                       })}

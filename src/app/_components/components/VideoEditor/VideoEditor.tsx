@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, useVideoConfig } from "remotion";
 import { Background } from "./Background";
 import { AudioTrack } from "./AudioTrack";
-import { KaraokeSubtitle } from "./KaraokeSubtitle";
+import { KaraokeSubtitle } from "./components";
 import { KaraokeLine, videoEditorSchema } from "./constants";
 import { z } from "zod";
 
@@ -54,6 +54,7 @@ export const VideoEditor: React.FC<
         lines={karaokeLines}
         editable
         setKaraokeLines={setKaraokeLines}
+        effectType="default"
       />
     </AbsoluteFill>
   );
