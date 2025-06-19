@@ -21,6 +21,7 @@ import {
   DEFAULT_FONT_WEIGHT,
 } from "../../constants";
 import { KaraokeLineWithStyle, TextStyle } from "../../types";
+import { KaraokeWord } from "./components";
 
 // Mở rộng interface KaraokeLine để thêm thuộc tính position
 interface KaraokeLineWithPosition extends KaraokeLine {
@@ -291,6 +292,8 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
             fontSize: DEFAULT_FONT_SIZE,
             fontWeight: DEFAULT_FONT_WEIGHT,
             textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+            WebkitFontSmoothing: "antialiased",
+            MozOsxFontSmoothing: "grayscale",
           }}
         >
           <div className="w-full h-full relative">
@@ -381,22 +384,11 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
                         );
 
                         return (
-                          <span
+                          <KaraokeWord
                             key={wordIndex}
-                            className={wordStyle.containerClassName}
-                            style={wordStyle.containerStyle}
-                            data-text={word.word}
-                          >
-                            {word.word}
-                            {wordStyle.renderHighlight && (
-                              <span
-                                className={wordStyle.highlightClassName}
-                                style={wordStyle.highlightStyle}
-                              >
-                                {word.word}
-                              </span>
-                            )}
-                          </span>
+                            word={word as KaraokeLineWithStyle["words"][0]}
+                            wordStyle={wordStyle}
+                          />
                         );
                       })}
                     </div>
@@ -458,22 +450,11 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
                         );
 
                         return (
-                          <span
+                          <KaraokeWord
                             key={wordIndex}
-                            className={wordStyle.containerClassName}
-                            style={wordStyle.containerStyle}
-                            data-text={word.word}
-                          >
-                            {word.word}
-                            {wordStyle.renderHighlight && (
-                              <span
-                                className={wordStyle.highlightClassName}
-                                style={wordStyle.highlightStyle}
-                              >
-                                {word.word}
-                              </span>
-                            )}
-                          </span>
+                            word={word as KaraokeLineWithStyle["words"][0]}
+                            wordStyle={wordStyle}
+                          />
                         );
                       })}
                     </div>

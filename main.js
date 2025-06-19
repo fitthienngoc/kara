@@ -32,8 +32,8 @@ function createWindow() {
     },
   });
 
-  // console.log("process.env", process.env);
-  const isDev = process.env !== 'production';
+  console.log("process.env", process.env.NODE_ENV);
+  const isDev = process.env.NODE_ENV !== 'production';
   // URL để load
   const startUrl = isDev
     ? "http://localhost:3000"

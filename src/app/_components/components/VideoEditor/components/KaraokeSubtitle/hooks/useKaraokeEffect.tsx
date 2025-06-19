@@ -22,13 +22,12 @@ interface UseKaraokeEffectProps {
   fps?: number;
 }
 
-interface KaraokeWordStyle {
+export interface KaraokeWordStyle {
   containerClassName: string;
   containerStyle?: React.CSSProperties;
   highlightClassName?: string;
   highlightStyle?: React.CSSProperties;
   cssStyles: string;
-  // Thêm thuộc tính để xác định có render phần highlight hay không
   renderHighlight: boolean;
 }
 
@@ -36,7 +35,6 @@ export const useKaraokeEffect = ({
   effectType = "default",
   frame,
   lines,
-  fps = 30,
 }: UseKaraokeEffectProps) => {
   // Tạo CSS styles dựa trên loại hiệu ứng
   const cssStyles = useMemo(() => {
@@ -47,6 +45,9 @@ export const useKaraokeEffect = ({
       .karaoke-word {
         position: relative;
         white-space: nowrap;
+        will-change: transform;
+        backface-visibility: hidden;
+        -webkit-font-smoothing: subpixel-antialiased;
       }
     `;
 
@@ -60,20 +61,11 @@ export const useKaraokeEffect = ({
             top: 0;
             overflow: hidden;
             white-space: nowrap;
-            width: 0;
+            transition: width 33ms linear;
           }
           
-          @keyframes fill-text {
-            from { width: var(--start-width, 0%); }
-            to { width: var(--end-width, 100%); }
-          }
-          
-          .karaoke-filling {
-            animation: fill-text var(--duration, 1s) linear forwards;
-          }
-          
-          .karaoke-filled {
-            width: 100%;
+          .karaoke-completed {
+            width: 100% !important;
           }
         `;
         break;
@@ -92,6 +84,7 @@ export const useKaraokeEffect = ({
             animation: gradient-move 3s ease infinite;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            will-change: background-position;
           }
         `;
         break;
@@ -99,12 +92,13 @@ export const useKaraokeEffect = ({
         styles += `
           @keyframes glow {
             0% { text-shadow: 0 0 2px rgba(255, 255, 255, 0.5); }
-            50% { text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 15px #ffcc00; }
+            50% { text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 15px var(--glow-color, #ffcc00); }
             100% { text-shadow: 0 0 2px rgba(255, 255, 255, 0.5); }
           }
           
           .karaoke-glow {
             animation: glow 1.5s infinite;
+            will-change: text-shadow;
           }
         `;
         break;
@@ -116,8 +110,14 @@ export const useKaraokeEffect = ({
             25% { transform: translateY(-5px); }
             75% { transform: translateY(5px); }
           }
+          
+          .karaoke-wave-animation {
+            animation: wave 2s infinite;
+            will-change: transform;
+          }
         `;
         break;
+
       case "bounce":
         styles += `
           @keyframes bounce-in {
@@ -130,6 +130,7 @@ export const useKaraokeEffect = ({
           
           .karaoke-bounce {
             animation: bounce-in 0.5s forwards;
+            will-change: transform, opacity;
           }
         `;
         break;
@@ -138,7 +139,9 @@ export const useKaraokeEffect = ({
         styles += `
           .karaoke-3d {
             transform: perspective(500px) rotateX(5deg);
+            transform-style: preserve-3d;
           }
+          
           .karaoke-3d-inactive {
             text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa, 
                         0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 
@@ -147,43 +150,22 @@ export const useKaraokeEffect = ({
           }
           
           .karaoke-3d-active {
-            text-shadow: 0 1px 0 #fff, 0 2px 0 #fff, 0 3px 0 #fff, 0 4px 0 #fff, 0 5px 0 #fff,
-                        0 6px 1px rgba(255,255,255,.1), 0 0 5px rgba(255,255,255,.1), 0 1px 3px rgba(255,255,255,.3),
-                        0 3px 5px rgba(255,255,255,.2), 0 5px 10px rgba(255,255,255,.25), 0 10px 10px rgba(255,255,255,.2),
+            text-shadow: 0 1px 0 var(--active-color-shadow, #fff), 
+                        0 2px 0 var(--active-color-shadow, #fff), 
+                        0 3px 0 var(--active-color-shadow, #fff), 
+                        0 4px 0 var(--active-color-shadow, #fff), 
+                        0 5px 0 var(--active-color-shadow, #fff),
+                        0 6px 1px rgba(255,255,255,.1), 
+                        0 0 5px rgba(255,255,255,.1), 
+                        0 1px 3px rgba(255,255,255,.3),
+                        0 3px 5px rgba(255,255,255,.2), 
+                        0 5px 10px rgba(255,255,255,.25), 
+                        0 10px 10px rgba(255,255,255,.2),
                         0 20px 20px rgba(255,255,255,.15);
           }
         `;
         break;
     }
-
-    // Tạo animation cho từng từ (chỉ cho hiệu ứng default)
-    if (effectType === "default") {
-      lines.forEach((line, lineIndex) => {
-        line.words.forEach((word, wordIndex) => {
-          const wordKey = `line${lineIndex}-word${wordIndex}`;
-
-          if (
-            word.startTime !== undefined &&
-            word.endTime !== undefined &&
-            frame >= word.startTime &&
-            frame < word.endTime
-          ) {
-            const duration = word.endTime - word.startTime;
-            const remainingDuration = (word.endTime - frame) / fps; // Chuyển đổi frame sang giây
-            const progress = (frame - word.startTime) / duration;
-
-            styles += `
-              .word-${wordKey}-highlight {
-                --start-width: ${progress * 100}%;
-                --end-width: 100%;
-                --duration: ${remainingDuration}s;
-    }
-            `;
-          }
-        });
-      });
-    }
-
     // Tạo style riêng cho từng từ
     lines.forEach((line, lineIndex) => {
       const lineStyle = line.style || ({} as Partial<TextStyle>);
@@ -211,23 +193,52 @@ export const useKaraokeEffect = ({
 
         const wordKey = `line${lineIndex}-word${wordIndex}`;
 
+        // Tính toán màu glow dựa trên active color
+        const activeColorRgb = hexToRgb(activeColor);
+        const glowColor = activeColorRgb
+          ? `rgba(${activeColorRgb.r}, ${activeColorRgb.g}, ${activeColorRgb.b}, 0.8)`
+          : "#ffcc00";
+
+        // Tính toán màu shadow cho hiệu ứng 3D
+        const shadowColor = activeColor === "#ffffff" ? "#fff" : activeColor;
+
         // Style riêng cho từng từ
         styles += `
           .word-${wordKey} {
             color: ${inactiveColor};
             -webkit-text-stroke: ${wordTextStroke} ${wordTextStrokeColor};
+            text-shadow: 0 0 1px rgba(0,0,0,0.3);
           }
           
           .word-${wordKey}-active {
             color: ${activeColor};
             -webkit-text-stroke: ${wordTextStroke} ${wordTextStrokeColor};
+            text-shadow: 0 0 1px rgba(0,0,0,0.3);
+          }
+          
+          .word-${wordKey}-glow {
+            --glow-color: ${glowColor};
+          }
+          
+          .word-${wordKey}-3d {
+            --active-color-shadow: ${shadowColor};
+          }
+
+          @keyframes glow-${wordKey} {
+            0% { text-shadow: 0 0 2px rgba(255, 255, 255, 0.5); }
+            50% { text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 15px ${glowColor}; }
+            100% { text-shadow: 0 0 2px rgba(255, 255, 255, 0.5); }
+          }
+          
+          .word-${wordKey}-glow-animation {
+            animation: glow-${wordKey} 1.5s infinite;
           }
         `;
       });
     });
 
     return styles;
-  }, [effectType, frame, lines, fps]);
+  }, [effectType, lines]);
 
   // Tạo style cho từng từ dựa trên loại hiệu ứng
   const getWordStyle = (
@@ -262,6 +273,17 @@ export const useKaraokeEffect = ({
     const isJustStarted =
       word.startTime !== undefined && Math.abs(frame - word.startTime) < 5; // 5 frames ~ 0.16s ở 30fps
 
+    // Tính toán tiến độ hoàn thành của từ hiện tại
+    let progress = 0;
+    if (word.startTime !== undefined && word.endTime !== undefined) {
+      if (frame > word.endTime) {
+        progress = 1; // 100%
+      } else if (frame >= word.startTime) {
+        const duration = word.endTime - word.startTime;
+        progress = duration > 0 ? (frame - word.startTime) / duration : 1;
+      }
+    }
+
     // Xác định xem có cần render phần highlight không
     let renderHighlight = false;
 
@@ -272,17 +294,12 @@ export const useKaraokeEffect = ({
     switch (effectType) {
       case "default":
         renderHighlight = true;
-        let highlightClassName = `word-${wordKey}-active karaoke-default-highlight word-${wordKey}-highlight`;
-
-        if (isCurrentWord) {
-          highlightClassName += " karaoke-filling";
-        } else if (isCompleted) {
-          highlightClassName += " karaoke-filled";
-        }
         return {
           containerClassName: baseContainerClassName,
-          highlightClassName: highlightClassName,
-          highlightStyle: {},
+          highlightClassName: `word-${wordKey}-active karaoke-default-highlight ${isCompleted ? "karaoke-completed" : ""}`,
+          highlightStyle: {
+            width: isCompleted ? "100%" : `${progress * 100}%`,
+          },
           cssStyles,
           renderHighlight,
         };
@@ -300,51 +317,53 @@ export const useKaraokeEffect = ({
         };
 
       case "glow":
-        // Với glow, chỉ áp dụng hiệu ứng cho từ hiện tại
+        // Với glow, chỉ áp dụng hiệu ứng cho từ hiện tại và sử dụng active color
         return {
           containerClassName: `${baseContainerClassName} ${
             isCurrentWord
-              ? `karaoke-glow word-${wordKey}-active`
+              ? `word-${wordKey}-active word-${wordKey}-glow word-${wordKey}-glow-animation`
               : isCompleted
                 ? `word-${wordKey}-active`
                 : ""
           }`,
+          containerStyle: isCurrentWord ? { color: activeColor } : undefined,
           cssStyles,
           renderHighlight: false,
         };
 
       case "wave":
-        // Với wave, áp dụng animation cho từ hiện tại
+        // Với wave, áp dụng animation và active color cho từ hiện tại
         return {
           containerClassName: `${baseContainerClassName} ${
             isCompleted ? `word-${wordKey}-active` : ""
-          }`,
+          } ${isCurrentWord ? "karaoke-wave-animation" : ""}`,
           containerStyle: {
-            animation: isCurrentWord
-              ? `wave 2s infinite ${wordIndex * 0.1}s`
-              : "none",
             color: isCurrentWord ? activeColor : undefined,
+            animationDelay: `${wordIndex * 0.1}s`,
           },
           cssStyles,
           renderHighlight: false,
         };
 
       case "bounce":
-        // Với bounce, áp dụng animation khi từ bắt đầu
+        // Với bounce, áp dụng animation khi từ bắt đầu và active color
         return {
           containerClassName: `${baseContainerClassName} ${
             isJustStarted ? "karaoke-bounce" : ""
           } ${isCurrentWord || isCompleted ? `word-${wordKey}-active` : ""}`,
+          // Thêm active color ngay khi từ bắt đầu
+          containerStyle:
+            isJustStarted || isCurrentWord ? { color: activeColor } : undefined,
           cssStyles,
           renderHighlight: false,
         };
 
       case "3d":
-        // Với 3D, áp dụng hiệu ứng cho tất cả các từ
+        // Với 3D, áp dụng hiệu ứng và active color cho tất cả các từ
         return {
           containerClassName: `${baseContainerClassName} karaoke-3d ${
             isCurrentWord || isCompleted
-              ? `karaoke-3d-active word-${wordKey}-active`
+              ? `karaoke-3d-active word-${wordKey}-active word-${wordKey}-3d`
               : "karaoke-3d-inactive"
           }`,
           cssStyles,
@@ -356,7 +375,9 @@ export const useKaraokeEffect = ({
         return {
           containerClassName: baseContainerClassName,
           highlightClassName: `word-${wordKey}-active karaoke-default-highlight`,
-          highlightStyle: {},
+          highlightStyle: {
+            width: isCompleted ? "100%" : `${progress * 100}%`,
+          },
           cssStyles,
           renderHighlight,
         };
@@ -368,3 +389,16 @@ export const useKaraokeEffect = ({
     getWordStyle,
   };
 };
+
+// Hàm hỗ trợ chuyển đổi màu hex sang RGB
+function hexToRgb(hex: string) {
+  // Kiểm tra hex có hợp lệ không
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
