@@ -1,13 +1,57 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { isDev } from "../../../types/constants";
 
 // Kiểm tra xem có đang chạy trong Electron không
 const isElectron = () => {
+  if (!isDev) return true; // Trong môi trường phát triển, không cần kiểm tra Electron
   if (typeof window === "undefined") return false;
   // Kiểm tra sự tồn tại của biến isElectronApp đã được expose từ preload.js
-  return window?.electron?.isElectronApp === true;
+  return window?.electronAPI?.isElectronApp === true;
 };
+
+// Định nghĩa các tùy chọn chất lượng video
+interface VideoQualityOption {
+  id: string;
+  label: string;
+  crf: number; // Constant Rate Factor (thấp = chất lượng cao hơn)
+  preset: string; // FFmpeg preset (veryslow, slower, slow, medium, fast, faster, veryfast, superfast, ultrafast)
+  description: string; // Mô tả ngắn
+}
+
+// Danh sách các tùy chọn chất lượng
+const VIDEO_QUALITY_OPTIONS: VideoQualityOption[] = [
+  {
+    id: "draft",
+    label: "Nháp (Nhanh)",
+    crf: 28,
+    preset: "veryfast",
+    description:
+      "Chất lượng thấp, thời gian render nhanh, phù hợp để xem trước",
+  },
+  {
+    id: "medium",
+    label: "Trung bình",
+    crf: 23,
+    preset: "medium",
+    description: "Cân bằng giữa chất lượng và thời gian render",
+  },
+  {
+    id: "high",
+    label: "Cao",
+    crf: 18,
+    preset: "slow",
+    description: "Chất lượng cao, thời gian render lâu hơn",
+  },
+  {
+    id: "ultra",
+    label: "Siêu cao",
+    crf: 12,
+    preset: "veryslow",
+    description: "Chất lượng tốt nhất, thời gian render rất lâu",
+  },
+];
 
 interface ElectronRenderProps {
   saveSettings: () => void;
@@ -21,20 +65,26 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
 }) => {
   const [isRendering, setIsRendering] = useState(false);
   const [renderLog, setRenderLog] = useState<string[]>([]);
-  const [outputPath, setOutputPath] = useState("/videos/rendered-video.mp4");
+  const [outputPath, setOutputPath] = useState("rendered-video.mp4");
   const [progress, setProgress] = useState(0);
+  // Thêm state cho chất lượng video, mặc định là "high"
+  const [selectedQuality, setSelectedQuality] = useState<string>("high");
 
   useEffect(() => {
     // Chỉ thiết lập các listener nếu đang chạy trong Electron
     if (isElectron()) {
-      const { ipcRenderer } = window.require("electron");
-
+      const ipc = window.electronAPI?.ipc;
+      if (!ipc) {
+        console.error(
+          "Electron IPC not available. Make sure you are running in Electron.",
+        );
+        return;
+      }
       // Lắng nghe các sự kiện từ main process
-      ipcRenderer.on("render-log", (_event: unknown, message: string) => {
-        setRenderLog((prev) => [...prev, message]);
+      ipc.on("render-log", (message) => {
+        setRenderLog((prev) => [...prev, message as string]);
 
         // Phân tích log để cập nhật tiến trình
-        console.log(message);
 
         if (message.includes("Rendered")) {
           const match = message.match(
@@ -49,11 +99,11 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
         }
       });
 
-      ipcRenderer.on("render-error", (_event: unknown, message: unknown) => {
+      ipc.on("render-error", (_event, message) => {
         setRenderLog((prev) => [...prev, `ERROR: ${message}`]);
       });
 
-      ipcRenderer.on("render-complete", (_event: unknown, success: unknown) => {
+      ipc.on("render-complete", (_event, success) => {
         setIsRendering(false);
         setRenderLog((prev) => [
           ...prev,
@@ -63,9 +113,9 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
 
       // Cleanup khi component unmount
       return () => {
-        ipcRenderer.removeAllListeners("render-log");
-        ipcRenderer.removeAllListeners("render-error");
-        ipcRenderer.removeAllListeners("render-complete");
+        ipc.removeAllListeners("render-log");
+        ipc.removeAllListeners("render-error");
+        ipc.removeAllListeners("render-complete");
       };
     }
   }, []);
@@ -75,8 +125,14 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
     if (!isElectron()) return;
 
     try {
-      const { ipcRenderer } = window.require("electron");
-      const filePath = await ipcRenderer.invoke("show-save-dialog", {
+      const ipc = window.electronAPI?.ipc;
+      if (!ipc) {
+        console.error(
+          "Electron IPC not available. Make sure you are running in Electron.",
+        );
+        return;
+      }
+      const filePath = await ipc.invoke("show-save-dialog", {
         defaultPath: outputPath,
       });
 
@@ -104,17 +160,29 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
     setProgress(0);
 
     try {
-      const { ipcRenderer } = window.require("electron");
+      const ipc = window.electronAPI?.ipc;
+      if (!ipc) {
+        console.error(
+          "Electron IPC not available. Make sure you are running in Electron.",
+        );
+        return;
+      }
+
+      // Lấy thông tin chất lượng từ tùy chọn được chọn
+      const qualitySettings = VIDEO_QUALITY_OPTIONS.find(
+        (option) => option.id === selectedQuality,
+      );
 
       // Đọc file audio thành ArrayBuffer
       const arrayBuffer = await audioFile.arrayBuffer();
 
-      // Gửi file audio và cấu hình video đến main process
-      ipcRenderer.send("render-video", {
+      // Gửi file audio, cấu hình video và thông tin chất lượng đến main process
+      ipc.send("render-video", {
         outputPath,
         videoSettings,
         audioFile: Array.from(new Uint8Array(arrayBuffer)),
         audioFileName: audioFile.name,
+        qualitySettings, // Thêm cài đặt chất lượng vào dữ liệu gửi đi
       });
     } catch (error) {
       setIsRendering(false);
@@ -128,8 +196,14 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
     if (!isElectron()) return;
 
     try {
-      const { ipcRenderer } = window.require("electron");
-      ipcRenderer.send("stop-render"); // Gửi sự kiện "stop-render" đến main process
+      const ipc = window.electronAPI?.ipc;
+      if (!ipc) {
+        console.error(
+          "Electron IPC not available. Make sure you are running in Electron.",
+        );
+        return;
+      }
+      ipc.send("stop-render"); // Gửi sự kiện "stop-render" đến main process
       setIsRendering(false); // Dừng trạng thái render
       setRenderLog((prev) => [...prev, "Render stopped by user."]);
     } catch (error) {
@@ -171,6 +245,45 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
           >
             Chọn...
           </button>
+        </div>
+      </div>
+
+      {/* Thêm phần chọn chất lượng video */}
+      <div className="mb-3">
+        <label className="block text-sm font-medium mb-1">
+          Chất lượng video:
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {VIDEO_QUALITY_OPTIONS.map((option) => (
+            <div
+              key={option.id}
+              className={`border p-2 rounded cursor-pointer ${
+                selectedQuality === option.id
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300 hover:bg-gray-50"
+              }`}
+              onClick={() => !isRendering && setSelectedQuality(option.id)}
+            >
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id={`quality-${option.id}`}
+                  name="videoQuality"
+                  checked={selectedQuality === option.id}
+                  onChange={() => setSelectedQuality(option.id)}
+                  disabled={isRendering}
+                  className="mr-2"
+                />
+                <label
+                  htmlFor={`quality-${option.id}`}
+                  className="font-medium cursor-pointer"
+                >
+                  {option.label}
+                </label>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">{option.description}</p>
+            </div>
+          ))}
         </div>
       </div>
 

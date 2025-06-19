@@ -2,6 +2,7 @@
   "name": "next-kra",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "author": {
     "name": "Mohit Yadav",
     "email": "mohit@mohitya.dev",
@@ -17,6 +18,7 @@
     "@remotion/shapes": "4.0.314",
     "@remotion/tailwind-v4": "4.0.314",
     "clsx": "2.1.1",
+    "electron-is-dev": "^3.0.1",
     "file-saver": "^2.0.5",
     "next": "15.2.4",
     "react": "19.0.0",

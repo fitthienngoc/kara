@@ -13,7 +13,6 @@ import {
 import { tmpdir } from "os";
 import path from "path";
 import kill from "tree-kill";
-import isDev from "./types/constants";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,10 +32,12 @@ function createWindow() {
     },
   });
 
+  // console.log("process.env", process.env);
+  const isDev = false;
   // URL để load
   const startUrl = isDev
-    ? "http://localhost:3000" // URL dev server
-    : `file://${join(__dirname, "./out/index.html")}`; // URL file đã build
+    ? "http://localhost:3000"
+    : `file://${join(__dirname, "./out/index.html")}`; // Adjust path as needed
 
   // Load URL trong cửa sổ
   mainWindow.loadURL(startUrl);
@@ -83,13 +84,25 @@ let currentRenderProcess = null;
 
 // Xử lý sự kiện render video
 ipcMain.on("render-video", async (event, options) => {
-  const { outputPath, videoSettings, audioFile, audioFileName } = options;
+  const {
+    outputPath,
+    videoSettings,
+    audioFile,
+    audioFileName,
+    qualitySettings,
+  } = options;
 
   try {
     // In ra thông tin debug
     console.log("Current directory:", __dirname);
     console.log("Audio file name:", audioFileName);
     console.log("Audio file size:", audioFile.length);
+
+    const directory = path.dirname(outputPath);
+    if (!existsSync(directory)) {
+      mkdirSync(directory, { recursive: true });
+      event.sender.send("render-log", `Created output directory: ${directory}`);
+    }
 
     // Tạo thư mục public nếu chưa tồn tại
     const publicDir = join(__dirname, "public");
@@ -137,6 +150,8 @@ ipcMain.on("render-video", async (event, options) => {
     }
 
     const settingsPath = join(tempDir, "video-settings.json");
+    console.log({ settingsPath });
+
     writeFileSync(settingsPath, JSON.stringify(settingsWithAudio, null, 2));
 
     // In ra nội dung file cấu hình
@@ -146,29 +161,41 @@ ipcMain.on("render-video", async (event, options) => {
     );
 
     // Tạo lệnh render
-    const command = `npx remotion render src/render.ts KaraokeVideoEditor --codec=h264 --props="${settingsPath}" --output="${outputPath}"`;
+    let command = `npx remotion render src/remotion/render.ts KaraokeVideoEditor --codec=h264 --props="${settingsPath}" --output="${outputPath}"`;
 
-    // event.sender.send("render-log", `Executing: ${command}`);
-    // console.log("Executing command:", command);
+    // Thêm các tham số chất lượng video nếu được cung cấp
+    if (qualitySettings) {
+      console.log("Using quality settings:", qualitySettings);
+
+      // CRF (Constant Rate Factor) - Kiểm soát chất lượng video
+      command += ` --crf=${qualitySettings.crf}`;
+
+      // Preset - Kiểm soát tốc độ nén và chất lượng
+      command += ` --preset=${qualitySettings.preset}`;
+
+      // Ghi log thông tin chất lượng
+      event.sender.send(
+        "render-log",
+        `Chuẩn bị render với chất lượng: ${qualitySettings.label}`,
+      );
+    }
+
+    event.sender.send("render-log", `Executing: ${command}`);
+
+    console.log("Executing command:", command);
 
     // Thực thi lệnh render
     currentRenderProcess = exec(command);
 
     // Gửi log về renderer process
     currentRenderProcess.stdout.on("data", (data) => {
-      const existLog = ["Render"];
-
-      if (existLog.some((word) => data.toString().includes(word))) {
-        event.sender.send("render-log", data.toString());
-      }
+      event.sender.send("render-log", data.toString());
     });
 
     currentRenderProcess.stderr.on("data", (data) => {
-      const existLog = ["Error", "Warning", "Failed", "Render"];
+      console.log("Render error:", data.toString());
 
-      if (existLog.some((word) => data.toString().includes(word))) {
-        event.sender.send("render-error", data.toString());
-      }
+      event.sender.send("render-error", data.toString());
     });
 
     // Khi render hoàn tất
