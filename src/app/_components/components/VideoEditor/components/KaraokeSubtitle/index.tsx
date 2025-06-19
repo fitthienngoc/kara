@@ -24,12 +24,7 @@ import { KaraokeLineWithStyle, TextStyle } from "../../types";
 import { KaraokeWord } from "./components";
 
 // Mở rộng interface KaraokeLine để thêm thuộc tính position
-interface KaraokeLineWithPosition extends KaraokeLine {
-  position?: {
-    x: number;
-    y: number;
-  };
-}
+type KaraokeLineWithPosition = KaraokeLine;
 
 interface KaraokeSubtitleProps {
   lines: KaraokeLineWithPosition[];
@@ -275,6 +270,18 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
     }
   };
 
+  // Kiểm tra xem một dòng có đang active hay không
+  const isLineActive = (line: KaraokeLine) => {
+    if (line.startTime === undefined || line.endTime === undefined) {
+      return false;
+    }
+
+    // Dòng active khi:
+    // 1. Frame hiện tại >= thời điểm bắt đầu - thời gian preview
+    // 2. Frame hiện tại <= thời điểm kết thúc
+    return frame >= line.startTime - previewFrames && frame <= line.endTime;
+  };
+
   return (
     <>
       <style>{createBaseStyles()}</style>
@@ -313,11 +320,13 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
               const opacity = isPreview ? 0.5 : 1;
               const dotStatus = getCountdownDotStatus(line);
               const countdown = line.countDown;
-              const isActive =
-                line.startTime !== undefined &&
-                line.endTime !== undefined &&
-                frame >= line.startTime - previewFrames &&
-                frame <= line.endTime;
+
+              // Kiểm tra xem dòng có đang active không
+              const active = isLineActive(line);
+
+              if (!active) {
+                return null; // Không hiển thị dòng nếu không active
+              }
 
               // Lấy vị trí từ dữ liệu hoặc từ state
               const position = line.position || linePositions[lineIndex];
@@ -330,10 +339,7 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
                   <DraggableLine
                     key={lineIndex}
                     id={lineId}
-                    className={clsx(
-                      !isActive && "opacity-0",
-                      "absolute karaoke-line-container w-full",
-                    )}
+                    className="absolute karaoke-line-container w-full"
                     style={{
                       fontFamily: lineFontFamily,
                       fontSize: lineFontSize,
@@ -399,10 +405,7 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
                 return (
                   <div
                     key={lineIndex}
-                    className={clsx(
-                      !isActive && "opacity-0",
-                      "absolute w-full flex flex-col mb-2.5 bottom-0 left-0",
-                    )}
+                    className="absolute w-full flex flex-col mb-2.5 bottom-0 left-0"
                     style={{
                       fontFamily: lineFontFamily,
                       fontSize: lineFontSize,

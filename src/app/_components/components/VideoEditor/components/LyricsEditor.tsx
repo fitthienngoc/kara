@@ -5,6 +5,8 @@ import {
   DEFAULT_FONT_SIZE,
   DEFAULT_FONT_WEIGHT,
   DEFAULT_INACTIVE_COLOR,
+  DEFAULT_POSITION,
+  DEFAULT_POSITION_EVEN,
   DEFAULT_TEXT_STROKE,
   DEFAULT_TEXT_STROKE_COLOR,
   KaraokeLine,
@@ -430,6 +432,8 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
                   style: textSettingsToStyle(tab.textSettings),
                 }));
 
+          const clonePosition = result?.[result.length - 2]?.position;
+
           // Thêm dòng vào kết quả
           result.push({
             startTime,
@@ -437,6 +441,11 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
             words,
             style: textSettingsToStyle(tab.textSettings),
             countDown: line.countdown,
+            position:
+              clonePosition ||
+              (result.length % 2 === 0
+                ? DEFAULT_POSITION
+                : DEFAULT_POSITION_EVEN),
           });
         }
       });
@@ -686,7 +695,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
                 <input
                   type="range"
                   min="20"
-                  max="100"
+                  max="200"
                   value={activeTab.textSettings.fontSize}
                   onChange={handleFontSizeChange}
                   className="w-full mb-3"
@@ -701,7 +710,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
                   <input
                     type="range"
                     min="0"
-                    max="5"
+                    max="20"
                     value={getStrokeValue()}
                     onChange={handleTextStrokeChange}
                     className="w-full mb-2"

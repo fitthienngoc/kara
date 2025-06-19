@@ -205,6 +205,22 @@ const VideoEditorApp: React.FC = () => {
                 durationInFrames={durationInFrames}
                 setDurationInFrames={setDurationInFrames}
               />
+              <ElectronRender
+                saveSettings={saveSettings}
+                videoSettings={{
+                  backgroundType,
+                  backgroundSrc,
+                  backgroundColor,
+                  // Không truyền audioSrc vì nó là blob URL
+                  karaokeLines,
+                  fps,
+                  durationInFrames,
+                  ...videoSettings,
+                }}
+                setVideoSettings={setVideoSettings}
+                audioFile={audioFile}
+                setFps={setFps}
+              />
             </>
           )}
           {/* Phần karaoke - luôn hiển thị */}
@@ -216,23 +232,6 @@ const VideoEditorApp: React.FC = () => {
               fontOptions={VIETNAMESE_FONTS} // Thêm fontOptions vào đây
             />
           </div>
-
-          <ElectronRender
-            saveSettings={saveSettings}
-            videoSettings={{
-              backgroundType,
-              backgroundSrc,
-              backgroundColor,
-              // Không truyền audioSrc vì nó là blob URL
-              karaokeLines,
-              fps,
-              durationInFrames,
-              ...videoSettings,
-            }}
-            setVideoSettings={setVideoSettings}
-            audioFile={audioFile}
-            setFps={setFps}
-          />
         </div>
 
         {/* Phần xem trước video và timeline */}

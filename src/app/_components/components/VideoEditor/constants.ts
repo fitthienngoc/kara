@@ -22,7 +22,7 @@ export interface KaraokeLine {
   countDown?: boolean;
   style?: Partial<TextStyle>;
   // Thêm thuộc tính position
-  position?: {
+  position: {
     x: number;
     y: number;
   };
@@ -62,7 +62,7 @@ const KaraokeLineSchema = z.object({
   words: z.array(Word),
   countDown: z.boolean().optional(),
   style: TextStyleZ.optional(),
-  position: Position.optional(),
+  position: Position,
 });
 
 // Schema cho VideoEditor
@@ -93,6 +93,8 @@ export const DEFAULT_TEXT_STROKE = "1px";
 export const DEFAULT_TEXT_STROKE_COLOR = "#000000";
 export const DEFAULT_FPS = 30;
 export const HIGH_FPS = 60;
+export const DEFAULT_POSITION = { x: 100, y: 300 };
+export const DEFAULT_POSITION_EVEN = { x: 100, y: 500 };
 
 // Dữ liệu karaoke mẫu cho 30 FPS
 export const SAMPLE_KARAOKE_LINES: KaraokeLine[] = [
@@ -108,6 +110,7 @@ export const SAMPLE_KARAOKE_LINES: KaraokeLine[] = [
     startTime: 30,
     endTime: 180,
     countDown: false,
+    position: DEFAULT_POSITION,
   },
   {
     words: [
@@ -119,61 +122,66 @@ export const SAMPLE_KARAOKE_LINES: KaraokeLine[] = [
     startTime: 210,
     endTime: 290,
     countDown: false,
+    position: DEFAULT_POSITION_EVEN,
   },
 ];
 
 // Dữ liệu karaoke mẫu cho 60 FPS (thời gian nhân đôi để giữ nguyên thời lượng thực tế)
-export const SAMPLE_KARAOKE_LINES_60FPS: KaraokeLine[] = [
-  {
-    words: [
-      { word: "Chào", startTime: 60, endTime: 120 },
-      { word: "mừng", startTime: 120, endTime: 150 },
-      { word: "đến", startTime: 150, endTime: 180 },
-      { word: "với", startTime: 180, endTime: 240 },
-      { word: "Karaoke", startTime: 240, endTime: 300 },
-      { word: "Editor", startTime: 300, endTime: 360 },
-    ],
-    startTime: 60,
-    endTime: 360,
-    countDown: false,
-  },
-  {
-    words: [
-      { word: "Tạo", startTime: 420, endTime: 460 },
-      { word: "video", startTime: 460, endTime: 500 },
-      { word: "tuyệt", startTime: 500, endTime: 540 },
-      { word: "vời", startTime: 540, endTime: 580 },
-    ],
-    startTime: 420,
-    endTime: 580,
-    countDown: false,
-  },
-];
+// export const SAMPLE_KARAOKE_LINES_60FPS: KaraokeLine[] = [
+//   {
+//     words: [
+//       { word: "Chào", startTime: 60, endTime: 120 },
+//       { word: "mừng", startTime: 120, endTime: 150 },
+//       { word: "đến", startTime: 150, endTime: 180 },
+//       { word: "với", startTime: 180, endTime: 240 },
+//       { word: "Karaoke", startTime: 240, endTime: 300 },
+//       { word: "Editor", startTime: 300, endTime: 360 },
+//     ],
+//     startTime: 60,
+//     endTime: 360,
+//     countDown: false,
+//     position: DEFAULT_POSITION,
+//   },
+//   {
+//     words: [
+//       { word: "Tạo", startTime: 420, endTime: 460 },
+//       { word: "video", startTime: 460, endTime: 500 },
+//       { word: "tuyệt", startTime: 500, endTime: 540 },
+//       { word: "vời", startTime: 540, endTime: 580 },
+//     ],
+//     startTime: 420,
+//     endTime: 580,
+//     countDown: false,
+//     position: DEFAULT_POSITION_EVEN,
+//   },
+// ];
 
 // Cập nhật mẫu karaoke cho 24 FPS (phong cách điện ảnh)
-export const SAMPLE_KARAOKE_LINES_24FPS: KaraokeLine[] = [
-  {
-    words: [
-      { word: "Phong", startTime: 24, endTime: 48 },
-      { word: "cách", startTime: 48, endTime: 72 },
-      { word: "điện", startTime: 72, endTime: 96 },
-      { word: "ảnh", startTime: 96, endTime: 120 },
-    ],
-    startTime: 24,
-    endTime: 120,
-    countDown: false,
-  },
-  {
-    words: [
-      { word: "Video", startTime: 144, endTime: 168 },
-      { word: "chất", startTime: 168, endTime: 192 },
-      { word: "lượng", startTime: 192, endTime: 216 },
-    ],
-    startTime: 144,
-    endTime: 216,
-    countDown: false,
-  },
-];
+// export const SAMPLE_KARAOKE_LINES_24FPS: KaraokeLine[] = [
+//   {
+//     words: [
+//       { word: "Phong", startTime: 24, endTime: 48 },
+//       { word: "cách", startTime: 48, endTime: 72 },
+//       { word: "điện", startTime: 72, endTime: 96 },
+//       { word: "ảnh", startTime: 96, endTime: 120 },
+//     ],
+//     startTime: 24,
+//     endTime: 120,
+//     countDown: false,
+//     position: DEFAULT_POSITION,
+//   },
+//   {
+//     words: [
+//       { word: "Video", startTime: 144, endTime: 168 },
+//       { word: "chất", startTime: 168, endTime: 192 },
+//       { word: "lượng", startTime: 192, endTime: 216 },
+//     ],
+//     startTime: 144,
+//     endTime: 216,
+//     countDown: false,
+//     position: DEFAULT_POSITION_EVEN,
+//   },
+// ];
 
 // Hàm tiện ích để điều chỉnh thời gian karaoke theo FPS
 export function adjustKaraokeTimingForFps(
@@ -196,5 +204,6 @@ export function adjustKaraokeTimingForFps(
       : undefined,
     endTime: line?.endTime ? Math.round(line?.endTime * ratio) : undefined,
     countDown: line.countDown,
+    position: { ...line.position },
   }));
 }
