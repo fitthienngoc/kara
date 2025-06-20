@@ -125,22 +125,6 @@ const VideoEditorApp: React.FC = () => {
     }
   };
 
-  // Add a useEffect to handle page unload or navigation
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Hiển thị hộp thoại xác nhận
-      event.preventDefault();
-      event.returnValue = ""; // Một số trình duyệt yêu cầu giá trị này để hiển thị hộp thoại xác nhận
-    };
-
-    // Lắng nghe sự kiện beforeunload
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    // Cleanup khi component unmount
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, []);
 
   const saveSettings = () => {
     const data = {
