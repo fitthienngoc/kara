@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { PlayerRef } from "@remotion/player";
-import {
-  SAMPLE_KARAOKE_LINES,
-  DEFAULT_FPS,
-} from "../components/VideoEditor/constants";
-import { KaraokeLine } from "../components/VideoEditor/constants";
+import { DEFAULT_FPS, KaraokeLine } from "../components/VideoEditor/constants";
 import { BackgroundSettings } from "../components/VideoEditor/components/BackgroundSettings";
 import { AudioSettings } from "../components/VideoEditor/components/AudioSettings";
 import { VideoSettings } from "../components/VideoEditor/components/VideoSettings";
@@ -19,6 +15,9 @@ import {
 import { saveAs } from "file-saver";
 import { ElectronRender } from "../ElectronRender";
 import { PreviewNTimeLine } from "./components";
+import { useAppDispatch, useAppSelector } from "../../../store/store";
+import { TKra1, TProject, TProjectWithKey } from "../../../store/reducers/projects/types";
+import { projectsActions } from "../../../store/reducers/projects";
 
 export type TVideoSetting = {
   width: number;
@@ -28,18 +27,113 @@ export type TVideoSetting = {
 const VideoEditorApp: React.FC = () => {
   console.log("✅ VideoEditorApp is mounted");
 
+  const projectData = useAppSelector(state => state.projects.projects.kra1);
+  const { audioSrc, code, durationInFrames = DEFAULT_FPS * 10, fps, height, karaokeLines, width } = projectData
+
+  const dispatch = useAppDispatch();
+
+  const setProject = (newProject: TProject<TProjectWithKey>) => dispatch(projectsActions.setProjects({
+    ...newProject,
+  }));
+
+  const setProjectWithProp = <K extends keyof TProject<TKra1>>({
+    property,
+    newVl,
+  }: {
+    property: K;
+    newVl: TProject<TKra1>[K];
+  }) => {
+    dispatch(projectsActions.setProjects({
+      ...projectData,
+      code,
+      [property]: newVl,
+    }));
+  };
+
+  const setAudioSrc = (newVl: string) => {
+    if (audioSrc) {
+      const audio = new Audio(audioSrc);
+      audio.onloadedmetadata = () => {
+        // Cập nhật durationInFrames dựa trên thời lượng audio
+        const newDurationInFrames = Math.ceil(audio.duration * fps);
+        setProject({ ...projectData, audioSrc: newVl, durationInFrames: newDurationInFrames });
+        return
+      };
+    }
+    setProjectWithProp({
+      property: "audioSrc",
+      newVl
+    });
+  }
+
+  const setKaraokeLines: (
+    action: KaraokeLine[] | ((prev: KaraokeLine[]) => KaraokeLine[])
+  ) => void = (action) => {
+    const prev = karaokeLines;
+    const newValue =
+      typeof action === "function"
+        ? (action as (prev: KaraokeLine[]) => KaraokeLine[])(prev)
+        : action;
+    setProjectWithProp({
+      property: "karaokeLines",
+      newVl: newValue,
+    });
+  };
+
+  const setFps = (action: number | ((prev: number) => number)) => {
+
+    const prev = fps;
+    const newValue = typeof action === "function" ? (action as (prev: number) => number)(prev) : action;
+    if (audioSrc) {
+      const audio = new Audio(audioSrc);
+      audio.onloadedmetadata = () => {
+        // Cập nhật durationInFrames dựa trên thời lượng audio
+        const newDurationInFrames = Math.ceil(audio.duration * fps);
+
+
+        // Điều chỉnh durationInFrames để giữ nguyên thời lượng thực tế
+        // const currentDurationInSeconds = durationInFrames / fps;
+        // setDurationInFrames(Math.round(currentDurationInSeconds * newFps));
+        setProject({ ...projectData, fps: newValue, durationInFrames: newDurationInFrames });
+        return
+      };
+    }
+    setProjectWithProp({
+      property: "fps",
+      newVl: newValue,
+    });
+  };
+
+  const setDurationInFrames: (
+    action: number | ((prev: number) => number)
+  ) => void = (action) => {
+    const prev = durationInFrames;
+    const newValue =
+      typeof action === "function"
+        ? (action as (prev: number) => number)(prev)
+        : action;
+    setProjectWithProp({
+      property: "durationInFrames",
+      newVl: newValue,
+    });
+  };
+
+  const setVideoSettings: React.Dispatch<React.SetStateAction<TVideoSetting>> = (action) => {
+    // Lấy prev từ store hoặc state
+    const prev = { width, height };
+    const newValue =
+      typeof action === "function" ? (action as (prev: TVideoSetting) => TVideoSetting)(prev) : action;
+    setProject({ ...projectData, ...newValue });
+  };
+
+
   // State cho các thuộc tính của video
   const [backgroundType, setBackgroundType] = useState<
     "image" | "video" | "color"
   >("color");
   const [backgroundSrc, setBackgroundSrc] = useState<string>("");
   const [backgroundColor, setBackgroundColor] = useState<string>("#121212");
-  const [audioSrc, setAudioSrc] = useState<string>("");
-  const [karaokeLines, setKaraokeLines] =
-    useState<KaraokeLine[]>(SAMPLE_KARAOKE_LINES);
-
-  const [fps, setFps] = useState<number>(DEFAULT_FPS);
-  const [durationInFrames, setDurationInFrames] = useState<number>(300);
+ 
 
   // State để theo dõi vị trí hiện tại
   const [currentFrame, setCurrentFrame] = useState<number>(0);
@@ -52,10 +146,10 @@ const VideoEditorApp: React.FC = () => {
   // Thêm state để lưu file audio gốc
   const [audioFile, setAudioFile] = useState<File | null>(null);
 
-  const [videoSettings, setVideoSettings] = useState<TVideoSetting>({
-    width: 1920,
-    height: 1080,
-  });
+  const videoSettings = {
+    width,
+    height,
+  }
 
   // Refs cho input file và player
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -87,17 +181,7 @@ const VideoEditorApp: React.FC = () => {
     setShowTimeline(!showTimeline);
   };
 
-  // Cập nhật durationInFrames dựa trên audio
-  useEffect(() => {
-    if (audioSrc) {
-      const audio = new Audio(audioSrc);
-      audio.onloadedmetadata = () => {
-        // Cập nhật durationInFrames dựa trên thời lượng audio
-        const newDurationInFrames = Math.ceil(audio.duration * fps);
-        setDurationInFrames(newDurationInFrames);
-      };
-    }
-  }, [audioSrc, fps]);
+
 
   // Thêm useEffect mới để đảm bảo currentFrame không vượt quá durationInFrames - 1
   useEffect(() => {
@@ -186,8 +270,8 @@ const VideoEditorApp: React.FC = () => {
               <VideoSettings
                 fps={fps}
                 setFps={setFps}
-                durationInFrames={durationInFrames}
-                setDurationInFrames={setDurationInFrames}
+                // durationInFrames={durationInFrames}
+                // setDurationInFrames={setDurationInFrames}
               />
               <ElectronRender
                 saveSettings={saveSettings}

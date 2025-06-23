@@ -13,6 +13,7 @@ import {
 import { tmpdir } from "os";
 import path from "path";
 import kill from "tree-kill";
+import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

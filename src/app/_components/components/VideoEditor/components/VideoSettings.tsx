@@ -3,15 +3,15 @@ import React from "react";
 interface VideoSettingsProps {
   fps: number;
   setFps: (fps: number) => void;
-  durationInFrames: number;
-  setDurationInFrames: (frames: number) => void;
+  // durationInFrames: number;
+  // setDurationInFrames: (frames: number) => void;
 }
 
 export const VideoSettings: React.FC<VideoSettingsProps> = ({
   fps,
   setFps,
-  durationInFrames,
-  setDurationInFrames,
+  // durationInFrames,
+  // setDurationInFrames,
 }) => {
   // Xử lý thay đổi FPS
   const handleFpsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -19,8 +19,8 @@ export const VideoSettings: React.FC<VideoSettingsProps> = ({
     setFps(newFps);
 
     // Điều chỉnh durationInFrames để giữ nguyên thời lượng thực tế
-    const currentDurationInSeconds = durationInFrames / fps;
-    setDurationInFrames(Math.round(currentDurationInSeconds * newFps));
+    // const currentDurationInSeconds = durationInFrames / fps;
+    // setDurationInFrames(Math.round(currentDurationInSeconds * newFps));
   };
 
   return (
