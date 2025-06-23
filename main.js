@@ -115,39 +115,37 @@ ipcMain.on("render-video", async (event, options) => {
       return;
     }
 
-    try {
-      const publicDir = join(__dirname, "public");
-      if (!existsSync(publicDir)) {
-        console.log("Creating public directory:", publicDir);
-        mkdirSync(publicDir, { recursive: true });
-      }
-
-      const audioDir = join(publicDir, "audio");
-      if (!existsSync(audioDir)) {
-        console.log("Creating audio directory:", audioDir);
-        mkdirSync(audioDir, { recursive: true });
-      }
-
-      const uniqueAudioFileName = `audio-${Date.now()}-${audioFileName}`;
-      audioPath = join(audioDir, uniqueAudioFileName);
-
-      console.log("Writing audio file to:", audioPath);
-      writeFileSync(audioPath, Buffer.from(audioFile));
-
-      if (existsSync(audioPath)) {
-        const stats = statSync(audioPath);
-        console.log("Audio file created successfully. Size:", stats.size);
-      } else {
-        throw new Error("Failed to create audio file!");
-      }
-
-      event.sender.send("render-log", `Saved audio to: ${audioPath}`);
-    } catch (err) {
-      console.error("Error saving audio file:", err);
-      event.sender.send("render-error", err.toString());
-      event.sender.send("render-error", "Không thể lưu file audio.");
-      return;
+    // try {
+    const publicDir = join(app.getPath('userData'), "public");
+    if (!existsSync(publicDir)) {
+      event.sender.send("Creating public directory:", publicDir);
+      mkdirSync(publicDir, { recursive: true });
     }
+
+    const audioDir = join(publicDir, "audio");
+    if (!existsSync(audioDir)) {
+      mkdirSync(audioDir, { recursive: true });
+    }
+
+    const uniqueAudioFileName = `audio-${Date.now()}-${audioFileName}`;
+    audioPath = join(audioDir, uniqueAudioFileName);
+
+
+    event.sender.send("Writing audio file to:", audioPath);
+    writeFileSync(audioPath, Buffer.from(audioFile));
+
+
+
+    if (existsSync(audioPath)) {
+      const stats = statSync(audioPath);
+      // Trả về đường dẫn thực tế cho renderer
+      event.sender.send("render-log", `Saved audio to: ${audioPath}`);
+    } else {
+      event.sender.send("Failed to create audio file!", audioPath);
+      throw new Error("Failed to create audio file!");
+    }
+
+    event.sender.send("render-log", `Saved audio to: ${audioPath}`);
 
     const settingsWithAudio = {
       ...videoSettings,
@@ -206,8 +204,8 @@ ipcMain.on("render-video", async (event, options) => {
           rmSync(tempDir, { recursive: true, force: true });
           console.log("Temp directory removed:", tempDir);
 
-          unlinkSync(audioPath);
-          console.log("Audio file removed:", audioPath);
+          // unlinkSync(audioPath);
+          // console.log("Audio file removed:", audioPath);
         } catch (err) {
           console.error("Error cleaning up temporary files:", err);
         }

@@ -234,7 +234,7 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
 }) => {
   const [isRendering, setIsRendering] = useState(false);
   const [renderLog, setRenderLog] = useState<string[]>([]);
-  const [outputPath, setOutputPath] = useState("rendered-video.mp4");
+  const [outputPath, setOutputPath] = useState("/public/video/rendered-video.mp4");
   const [progress, setProgress] = useState(0);
   // Thêm state cho chất lượng video, mặc định là "high"
   const [selectedQuality, setSelectedQuality] = useState<string>("high");
