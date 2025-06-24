@@ -6,14 +6,14 @@ import {
   existsSync,
   mkdirSync,
   writeFileSync,
-  statSync,
+  // statSync,
   rmSync,
   unlinkSync,
 } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import kill from "tree-kill";
-import 'dotenv/config';
+import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,12 +34,14 @@ function createWindow() {
   });
 
   console.log("process.env", process.env.NODE_ENV);
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NODE_ENV === "development";
 
   // URL để load
   const startUrl = isDev
     ? "http://localhost:3000"
     : `file://${join(__dirname, "./out/index.html")}`; // Adjust path as needed
+
+  console.log("Start URL:", startUrl);
 
   // Load URL trong cửa sổ
   mainWindow.loadURL(startUrl);
@@ -84,6 +86,16 @@ app.on("activate", () => {
 // Biến lưu trữ tiến trình render hiện tại
 let currentRenderProcess = null;
 
+// Handle the get-default-save-path request
+ipcMain.handle("get-default-save-path", () => {
+  try {
+    const savePath = app.getPath("downloads");
+    return path.join(savePath, "rendered-video.mp4");
+  } catch {
+    throw new Error("get-default-save-path failed");
+  }
+});
+
 // Xử lý sự kiện render video
 ipcMain.on("render-video", async (event, options) => {
   const {
@@ -94,12 +106,13 @@ ipcMain.on("render-video", async (event, options) => {
     qualitySettings,
   } = options;
 
+  event.sender.send("render-log", `userData: ${app.getPath("userData")}`);
+
   try {
     console.log("Current directory:", __dirname);
     console.log("Audio file name:", audioFileName);
     console.log("Audio file size:", audioFile.length);
 
-    let audioPath = "";
     let settingsPath = "";
     let tempDir = "";
 
@@ -107,7 +120,10 @@ ipcMain.on("render-video", async (event, options) => {
       const directory = path.dirname(outputPath);
       if (!existsSync(directory)) {
         mkdirSync(directory, { recursive: true });
-        event.sender.send("render-log", `Created output directory: ${directory}`);
+        event.sender.send(
+          "render-log",
+          `Created output directory: ${directory}`,
+        );
       }
     } catch (err) {
       console.error("Error creating output directory:", err);
@@ -116,40 +132,53 @@ ipcMain.on("render-video", async (event, options) => {
     }
 
     // try {
-    const publicDir = join(app.getPath('userData'), "public");
-    if (!existsSync(publicDir)) {
-      event.sender.send("Creating public directory:", publicDir);
-      mkdirSync(publicDir, { recursive: true });
-    }
+    // const publicDir = join(app.getPath("userData"), "public");
+    // if (!existsSync(publicDir)) {
+    //   event.sender.send("Creating public directory:", publicDir);
+    //   mkdirSync(publicDir, { recursive: true });
+    // }
 
-    const audioDir = join(publicDir, "audio");
-    if (!existsSync(audioDir)) {
-      mkdirSync(audioDir, { recursive: true });
-    }
+    // const audioDir = join(publicDir, "audio");
+    // if (!existsSync(audioDir)) {
+    //   mkdirSync(audioDir, { recursive: true });
+    // }
 
     const uniqueAudioFileName = `audio-${Date.now()}-${audioFileName}`;
-    audioPath = join(audioDir, uniqueAudioFileName);
+    // audioPath = join(audioDir, uniqueAudioFileName);
 
+    // event.sender.send("Writing audio file to:", audioPath);
+    // writeFileSync(audioPath, Buffer.from(audioFile));
 
-    event.sender.send("Writing audio file to:", audioPath);
-    writeFileSync(audioPath, Buffer.from(audioFile));
+    // if (existsSync(audioPath)) {
+    //   const stats = statSync(audioPath);
+    //   // Trả về đường dẫn thực tế cho renderer
+    //   event.sender.send(
+    //     "render-log",
+    //     `Saved audio to: ${audioPath} - Size: ${stats.size} bytes`,
+    //   );
+    // } else {
+    //   event.sender.send("Failed to create audio file!", audioPath);
+    //   throw new Error("Failed to create audio file!");
+    // }
 
+    // event.sender.send("render-log", `Saved audio to: ${audioPath}`);
 
+    // const audioSrc = `file://${audioPath.replace(/\\/g, "/")}`;
 
-    if (existsSync(audioPath)) {
-      const stats = statSync(audioPath);
-      // Trả về đường dẫn thực tế cho renderer
-      event.sender.send("render-log", `Saved audio to: ${audioPath}`);
-    } else {
-      event.sender.send("Failed to create audio file!", audioPath);
-      throw new Error("Failed to create audio file!");
+    const publicAudioDir = path.join(__dirname, "public", "audio");
+    if (!existsSync(publicAudioDir)) {
+      mkdirSync(publicAudioDir, { recursive: true });
     }
 
-    event.sender.send("render-log", `Saved audio to: ${audioPath}`);
+    const audioFilePath = path.join(publicAudioDir, uniqueAudioFileName);
+    writeFileSync(audioFilePath, Buffer.from(audioFile));
+
+    // Truyền path tương đối vào props
+    const audioSrc = `/audio/${uniqueAudioFileName}`;
 
     const settingsWithAudio = {
       ...videoSettings,
-      audioSrc: `/audio/${path.basename(audioPath)}`,
+      audioSrc,
     };
 
     try {
@@ -160,7 +189,10 @@ ipcMain.on("render-video", async (event, options) => {
 
       settingsPath = join(tempDir, "video-settings.json");
       writeFileSync(settingsPath, JSON.stringify(settingsWithAudio, null, 2));
-      console.log("Settings file content:", JSON.stringify(settingsWithAudio, null, 2));
+      console.log(
+        "Settings file content:",
+        JSON.stringify(settingsWithAudio, null, 2),
+      );
     } catch (err) {
       console.error("Error writing settings file:", err);
       event.sender.send("render-error", "Không thể lưu cấu hình video.");
@@ -175,7 +207,10 @@ ipcMain.on("render-video", async (event, options) => {
         command += ` --crf=${qualitySettings.crf}`;
         command += ` --preset=${qualitySettings.preset}`;
 
-        event.sender.send("render-log", `Chuẩn bị render với chất lượng: ${qualitySettings.label}`);
+        event.sender.send(
+          "render-log",
+          `Chuẩn bị render với chất lượng: ${qualitySettings.label}`,
+        );
       } catch (err) {
         console.error("Error applying quality settings:", err);
       }
@@ -204,15 +239,18 @@ ipcMain.on("render-video", async (event, options) => {
           rmSync(tempDir, { recursive: true, force: true });
           console.log("Temp directory removed:", tempDir);
 
-          // unlinkSync(audioPath);
-          // console.log("Audio file removed:", audioPath);
+          unlinkSync(audioFilePath);
+          console.log("Audio file removed:", audioFilePath);
         } catch (err) {
           console.error("Error cleaning up temporary files:", err);
         }
 
         event.sender.send("render-complete", code === 0);
         if (code === 0) {
-          event.sender.send("render-log", `Video rendered successfully to ${outputPath}`);
+          event.sender.send(
+            "render-log",
+            `Video rendered successfully to ${outputPath}`,
+          );
         } else {
           event.sender.send("render-error", `Render failed with code ${code}`);
         }
@@ -221,7 +259,6 @@ ipcMain.on("render-video", async (event, options) => {
       console.error("Error executing render command:", err);
       event.sender.send("render-error", "Không thể thực thi render.");
     }
-
   } catch (error) {
     console.error("Error in render-video handler:", error);
     event.sender.send(

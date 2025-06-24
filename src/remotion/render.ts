@@ -24,5 +24,6 @@ registerRoot(() =>
     durationInFrames: inputProps.durationInFrames as number,
     width: inputProps.width as number,
     height: inputProps.height as number,
+    fps: inputProps.fps as number,
   }),
 );

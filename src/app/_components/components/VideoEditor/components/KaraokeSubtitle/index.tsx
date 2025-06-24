@@ -82,7 +82,8 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
 }) => {
   const frame = useCurrentFrame();
   // Thời gian hiển thị trước (tính bằng frames) - mặc định là 3 giây (90 frames ở 30fps)
-  const previewFrames = 90;
+  const previewFrames = 60;
+  const previewFirstFrames = 90;
   const containerRef = useRef<HTMLDivElement>(null);
 
   // State để lưu vị trí tạm thời của từng dòng
@@ -279,7 +280,12 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
     // Dòng active khi:
     // 1. Frame hiện tại >= thời điểm bắt đầu - thời gian preview
     // 2. Frame hiện tại <= thời điểm kết thúc
-    return frame >= line.startTime - previewFrames && frame <= line.endTime;
+    const previewFramesFixed = line.countDown
+      ? previewFirstFrames
+      : previewFrames;
+    return (
+      frame >= line.startTime - previewFramesFixed && frame <= line.endTime
+    );
   };
 
   return (

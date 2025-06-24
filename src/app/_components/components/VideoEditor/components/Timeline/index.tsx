@@ -164,8 +164,9 @@ export const Timeline: React.FC<TimelineProps> = ({
       return prevLines.map((line) => {
         if (!line.words || line.words.length === 0) return line;
 
-        const updatedWords = line.words.map((word, index) => {
+        const updatedWords = line.words.map((wordC, index) => {
           const nextWord = line.words[index + 1]; // Lấy từ tiếp theo
+          const word = { ...wordC }; // Sao chép từ hiện tại
           if (!word.startTime) {
             // Nếu từ không có startTime, sử dụng thời gian hiện tại
             word.startTime = Math.round(currentTime * fps);
@@ -200,6 +201,10 @@ export const Timeline: React.FC<TimelineProps> = ({
       });
     });
   };
+
+  useEffect(() => {
+    setCustomDuration(durationInFrames / fps);
+  }, [fps]);
 
   // Add to the existing useEffect for keyboard events
   useEffect(() => {

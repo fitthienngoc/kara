@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
         "show-save-dialog",
         "open-output-folder",
         "open-directory",
+        "get-default-save-path",
       ];
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args);

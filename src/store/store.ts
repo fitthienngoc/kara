@@ -1,26 +1,28 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage'; // localStorage
+import { configureStore } from "@reduxjs/toolkit";
+import { useDispatch, useSelector, TypedUseSelectorHook } from "react-redux";
+import { persistStore, persistReducer } from "redux-persist";
+// Thay thế storage
+import createIndexedDBStorage from "redux-persist-indexeddb-storage";
 
+import rootReducer from "./rootReducer";
 
-import rootReducer from './rootReducer';
-
+// Tạo IndexedDB storage engine
+const createIdbStorage = createIndexedDBStorage("dev-banhda.vn");
 
 const persistConfig = {
-    key: 'root',
-    storage,
+  key: "root",
+  storage: createIdbStorage,
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 // Tạo store
 export const store = configureStore({
-    reducer: persistedReducer,
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: false, // Bắt buộc khi dùng redux-persist
-        }),
+  reducer: persistedReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false, // Bắt buộc khi dùng redux-persist
+    }),
 });
 
 export const persistor = persistStore(store);

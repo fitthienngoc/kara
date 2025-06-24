@@ -24,10 +24,12 @@ const RemotionRoot = ({
   durationInFrames,
   height,
   width,
+  fps,
 }: {
   durationInFrames: number;
   height: number;
   width: number;
+  fps: number;
 }) => {
   return (
     <>
@@ -38,14 +40,14 @@ const RemotionRoot = ({
         id={ID_KARAOKE_VIDEO_EDITOR}
         component={VideoEditor}
         durationInFrames={durationInFrames || DEFAULT_FPS * 10}
-        fps={DEFAULT_FPS}
+        fps={fps || DEFAULT_FPS}
         width={width}
         height={height}
         defaultProps={{
           backgroundType: "color",
           backgroundColor: "#121212",
           karaokeLines: SAMPLE_KARAOKE_LINES,
-          fps: DEFAULT_FPS,
+          fps: fps || DEFAULT_FPS,
         }}
       />
     </>

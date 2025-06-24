@@ -234,7 +234,7 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
 }) => {
   const [isRendering, setIsRendering] = useState(false);
   const [renderLog, setRenderLog] = useState<string[]>([]);
-  const [outputPath, setOutputPath] = useState("/public/video/rendered-video.mp4");
+  const [outputPath, setOutputPath] = useState("");
   const [progress, setProgress] = useState(0);
   // Thêm state cho chất lượng video, mặc định là "high"
   const [selectedQuality, setSelectedQuality] = useState<string>("high");
@@ -247,6 +247,24 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
   useEffect(() => {
     // Chỉ thiết lập các listener nếu đang chạy trong Electron
     if (isElectron()) {
+      const setDefaultOutputPath = async () => {
+        try {
+          const ipc = window.electronAPI?.ipc;
+          if (!ipc) {
+            console.error("Electron IPC not available");
+            return;
+          }
+
+          // Get default path from main process
+          const defaultPath = await ipc.invoke("get-default-save-path");
+          setOutputPath(defaultPath);
+        } catch (error) {
+          console.error("Error getting default save path:", error);
+          // Fallback to a generic path
+          setOutputPath("rendered-video.mp4");
+        }
+      };
+      setDefaultOutputPath();
       const ipc = window.electronAPI?.ipc;
       if (!ipc) {
         console.error(
@@ -401,6 +419,14 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
 
       // Đọc file audio thành ArrayBuffer
       const arrayBuffer = await audioFile.arrayBuffer();
+
+      console.log({
+        outputPath,
+        videoSettings,
+        audioFile: Array.from(new Uint8Array(arrayBuffer)),
+        audioFileName: audioFile.name,
+        qualitySettings, // Thêm cài đặt chất lượng vào dữ liệu gửi đi
+      });
 
       // Gửi file audio, cấu hình video, thông tin chất lượng và độ phân giải đến main process
       ipc.send("render-video", {

@@ -294,7 +294,15 @@ export default function useTimeLine({
     const updatedLines = [...karaokeLines];
     const { type, lineIndex, wordIndex, edge } = draggedItem;
 
-    const line = updatedLines[lineIndex];
+    // Tạo deep clone của line đang thao tác
+    const line = { ...updatedLines[lineIndex] };
+    updatedLines[lineIndex] = line; // Cập nhật reference cho line trong updatedLines
+
+    // Clone mảng words để tránh thay đổi trực tiếp
+    if (line.words) {
+      line.words = [...line.words];
+    }
+
     if (type === "line") {
       if (!line || line.startTime === undefined || line.endTime === undefined)
         return;
@@ -305,8 +313,9 @@ export default function useTimeLine({
         line.startTime = newStartTime;
 
         // Cập nhật startTime của từ đầu tiên
-        if (line.words.length > 0) {
-          line.words[0].startTime = newStartTime;
+        if (line.words && line.words.length > 0) {
+          // Clone word trước khi cập nhật
+          line.words[0] = { ...line.words[0], startTime: newStartTime };
         }
       } else if (edge === "end") {
         // Đảm bảo endTime không nhỏ hơn startTime
@@ -314,8 +323,13 @@ export default function useTimeLine({
         line.endTime = newEndTime;
 
         // Cập nhật endTime của từ cuối cùng
-        if (line.words.length > 0) {
-          line.words[line.words.length - 1].endTime = newEndTime;
+        if (line.words && line.words.length > 0) {
+          const lastIndex = line.words.length - 1;
+          // Clone word trước khi cập nhật
+          line.words[lastIndex] = {
+            ...line.words[lastIndex],
+            endTime: newEndTime,
+          };
         }
       } else {
         // Di chuyển cả dòng
@@ -324,60 +338,61 @@ export default function useTimeLine({
         line.endTime = newFrame + duration;
 
         // Cập nhật thời gian cho tất cả các từ
-        const wordDuration = duration / line.words.length;
-        line.words.forEach((word, idx) => {
-          if (line.startTime === undefined) return;
+        if (line.words && line.words.length > 0) {
+          const wordDuration = duration / line.words.length;
+          // Tạo mảng words mới với thời gian đã cập nhật
+          line.words = line.words.map((word, idx) => {
+            if (line.startTime === undefined) return word;
 
-          word.startTime = line.startTime + idx * wordDuration;
-          word.endTime = word.startTime + wordDuration;
-        });
+            return {
+              ...word, // Clone word
+              startTime: line.startTime + idx * wordDuration,
+              endTime: line.startTime + (idx + 1) * wordDuration,
+            };
+          });
+        }
       }
     } else if (type === "word" && typeof wordIndex === "number") {
-      if (!line || !line.words[wordIndex]) return;
+      if (!line || !line.words || !line.words[wordIndex]) return;
+
+      // Clone word trước khi thay đổi
+      line.words[wordIndex] = { ...line.words[wordIndex] };
+      const word = line.words[wordIndex]; // Reference đến word đã clone
 
       if (edge === "start") {
-        if (line.words[wordIndex].endTime === undefined) return;
+        if (word.endTime === undefined) return;
 
         // Đảm bảo startTime không vượt quá endTime
-        line.words[wordIndex].startTime = Math.min(
-          newFrame,
-          line.words[wordIndex].endTime - 1,
-        );
+        word.startTime = Math.min(newFrame, word.endTime - 1);
 
         // Nếu là từ đầu tiên, cập nhật startTime của dòng
         if (wordIndex === 0) {
-          line.startTime = line.words[wordIndex].startTime;
+          line.startTime = word.startTime;
         }
       } else if (edge === "end") {
-        if (line.words[wordIndex].startTime === undefined) return;
+        if (word.startTime === undefined) return;
+
         // Đảm bảo endTime không nhỏ hơn startTime
-        line.words[wordIndex].endTime = Math.max(
-          newFrame,
-          line.words[wordIndex].startTime + 1,
-        );
+        word.endTime = Math.max(newFrame, word.startTime + 1);
 
         // Nếu là từ cuối cùng, cập nhật endTime của dòng
         if (wordIndex === line.words.length - 1) {
-          line.endTime = line.words[wordIndex].endTime;
+          line.endTime = word.endTime;
         }
       } else {
-        if (
-          line.words[wordIndex].startTime === undefined ||
-          line.words[wordIndex].endTime === undefined
-        )
-          return;
         // Di chuyển cả từ
-        const duration =
-          line.words[wordIndex].endTime - line.words[wordIndex].startTime;
-        line.words[wordIndex].startTime = newFrame;
-        line.words[wordIndex].endTime = newFrame + duration;
+        if (word.startTime === undefined || word.endTime === undefined) return;
+
+        const duration = word.endTime - word.startTime;
+        word.startTime = newFrame;
+        word.endTime = newFrame + duration;
 
         // Cập nhật startTime và endTime của dòng nếu cần
         if (wordIndex === 0) {
-          line.startTime = line.words[wordIndex].startTime;
+          line.startTime = word.startTime;
         }
         if (wordIndex === line.words.length - 1) {
-          line.endTime = line.words[wordIndex].endTime;
+          line.endTime = word.endTime;
         }
       }
     }
