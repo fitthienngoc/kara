@@ -474,6 +474,69 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
     );
   }
 
+  // Lấy thông tin độ phân giải hiện tại
+  const currentResolution = RESOLUTION_OPTIONS.find(
+    (option) => option.id === selectedResolution,
+  );
+
+  // Hàm trả về icon cho từng tỷ lệ khung hình
+  const getAspectRatioIcon = (ratio: string) => {
+    switch (ratio) {
+      case "16:9":
+        return (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="2" y="5" width="20" height="14" rx="2" />
+          </svg>
+        );
+      case "9:16":
+        return (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="7" y="2" width="10" height="20" rx="2" />
+          </svg>
+        );
+      case "1:1":
+        return (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Hàm trả về icon cho từng mức chất lượng
+  const getQualityIcon = (qualityId: string) => {
+    switch (qualityId) {
+      case "draft":
+        return (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.071 19.071c3.898-3.899 3.898-10.243 0-14.142-3.899-3.899-10.243-3.898-14.142 0-3.899 3.899-3.899 10.243 0 14.142 3.899 3.898 10.243 3.898 14.142 0zM8.5 11.5L11 14l4.5-4.5" />
+          </svg>
+        );
+      case "medium":
+        return (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.071 19.071c3.898-3.899 3.898-10.243 0-14.142-3.899-3.899-10.243-3.898-14.142 0-3.899 3.899-3.899 10.243 0 14.142 3.899 3.898 10.243 3.898 14.142 0zM8.5 11.5L11 14l4.5-4.5M8.5 7.5L11 10l4.5-4.5" />
+          </svg>
+        );
+      case "high":
+        return (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.071 19.071c3.898-3.899 3.898-10.243 0-14.142-3.899-3.899-10.243-3.898-14.142 0-3.899 3.899-3.899 10.243 0 14.142 3.899 3.898 10.243 3.898 14.142 0zM8.5 11.5L11 14l4.5-4.5M8.5 7.5L11 10l4.5-4.5M8.5 3.5L11 6l4.5-4.5" />
+          </svg>
+        );
+      case "ultra":
+        return (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-12h2v6h-2zm0 8h2v2h-2z" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="mt-4 p-3 bg-gray-100 rounded border border-gray-300">
       <h3 className="text-lg font-bold mb-2">Render Video với Electron</h3>
@@ -523,101 +586,154 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
         </div>
       </div>
 
-      {/* Thêm phần chọn độ phân giải video */}
+      {/* Phần hiển thị cấu hình hiện tại (độ phân giải + chất lượng) */}
+      <div className="mb-3 flex items-center bg-blue-50 p-2 rounded border border-blue-200">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5 text-blue-500 mr-2"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        <div>
+          <span className="font-medium text-sm">Cấu hình hiện tại:</span>
+          <span className="ml-1 text-sm">
+            {currentResolution?.width}x{currentResolution?.height} (
+            {currentResolution?.aspectRatio}) - Chất lượng{" "}
+            {VIDEO_QUALITY_OPTIONS.find((q) => q.id === selectedQuality)?.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Phần chọn độ phân giải video - phiên bản tối ưu */}
       <div className="mb-3">
-        <label className="block text-sm font-medium mb-1">
-          Độ phân giải và tỷ lệ khung hình:
+        <label className="block text-sm font-medium mb-1 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Độ phân giải:
         </label>
-        <div className="space-y-3">
-          {Object.entries(resolutionsByRatio).map(([ratio, options]) => (
-            <div key={ratio} className="border p-2 rounded">
-              <h4 className="text-sm font-semibold mb-1">
-                Tỷ lệ {ratio}{" "}
-                {ratio === "16:9" ? "(Ngang)" : ratio === "9:16" ? "(Dọc)" : ""}
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {options.map((option) => (
-                  <div
-                    key={option.id}
-                    className={`border p-2 rounded cursor-pointer ${
-                      selectedResolution === option.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                    onClick={() =>
-                      !isRendering && handleSettingVideo(option.id)
-                    }
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id={`resolution-${option.id}`}
-                        name="videoResolution"
-                        checked={selectedResolution === option.id}
-                        onChange={() => handleSettingVideo(option.id)}
-                        disabled={isRendering}
-                        className="mr-2"
-                      />
-                      <label
-                        htmlFor={`resolution-${option.id}`}
-                        className="font-medium cursor-pointer"
-                      >
-                        {option.label}
-                      </label>
+        {Object.entries(resolutionsByRatio).map(([ratio, options]) => (
+          <div key={ratio} className="mb-2">
+            <div className="flex items-center text-xs text-gray-600 mb-1">
+              {getAspectRatioIcon(ratio)}
+              <span className="ml-1 font-medium">
+                {ratio === "16:9"
+                  ? "Ngang"
+                  : ratio === "9:16"
+                    ? "Dọc"
+                    : "Vuông"}{" "}
+                ({ratio})
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {options.map((option) => (
+                <div
+                  key={option.id}
+                  onClick={() => !isRendering && handleSettingVideo(option.id)}
+                  className={`flex items-center py-1 px-3 rounded cursor-pointer text-sm transition-all ${
+                    selectedResolution === option.id
+                      ? "bg-blue-100 border-blue-500 border text-blue-700 font-medium"
+                      : "bg-white border border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    id={`resolution-${option.id}`}
+                    name="videoResolution"
+                    checked={selectedResolution === option.id}
+                    onChange={() => handleSettingVideo(option.id)}
+                    disabled={isRendering}
+                    className="mr-2 w-3 h-3"
+                  />
+                  <div>
+                    <div>{option.label}</div>
+                    <div className="text-xs text-gray-500">
+                      {option.width}x{option.height}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {option.width}x{option.height} - {option.description}
-                    </p>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Phần chọn chất lượng video - phiên bản tối ưu */}
+      <div className="mb-3">
+        <label className="block text-sm font-medium mb-1 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Chất lượng video:
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {VIDEO_QUALITY_OPTIONS.map((option) => (
+            <div
+              key={option.id}
+              onClick={() => !isRendering && setSelectedQuality(option.id)}
+              className={`flex items-center gap-2 py-2 px-3 rounded cursor-pointer transition-all ${
+                selectedQuality === option.id
+                  ? "bg-blue-100 border-blue-500 border text-blue-700"
+                  : "bg-white border border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <input
+                type="radio"
+                id={`quality-${option.id}`}
+                name="videoQuality"
+                checked={selectedQuality === option.id}
+                onChange={() => setSelectedQuality(option.id)}
+                disabled={isRendering}
+                className="w-3 h-3"
+              />
+              <div className="text-blue-600">{getQualityIcon(option.id)}</div>
+              <div>
+                <div className="text-sm font-medium">{option.label}</div>
+                <div className="text-xs text-gray-500">
+                  {option.preset === "veryfast"
+                    ? "Nhanh"
+                    : option.preset === "veryslow"
+                      ? "Rất chậm"
+                      : option.preset === "slow"
+                        ? "Chậm"
+                        : "Trung bình"}
+                </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Phần chọn chất lượng video */}
-      <div className="mb-3">
-        <label className="block text-sm font-medium mb-1">
-          Chất lượng video:
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {VIDEO_QUALITY_OPTIONS.map((option) => (
-            <div
-              key={option.id}
-              className={`border p-2 rounded cursor-pointer ${
-                selectedQuality === option.id
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:bg-gray-50"
-              }`}
-              onClick={() => !isRendering && setSelectedQuality(option.id)}
-            >
-              <div className="flex items-center">
-                <input
-                  type="radio"
-                  id={`quality-${option.id}`}
-                  name="videoQuality"
-                  checked={selectedQuality === option.id}
-                  onChange={() => setSelectedQuality(option.id)}
-                  disabled={isRendering}
-                  className="mr-2"
-                />
-                <label
-                  htmlFor={`quality-${option.id}`}
-                  className="font-medium cursor-pointer"
-                >
-                  {option.label}
-                </label>
-              </div>
-              <p className="text-xs text-gray-600 mt-1">{option.description}</p>
-            </div>
-          ))}
+        <div className="mt-1 text-xs text-gray-500 italic">
+          Chất lượng cao hơn sẽ yêu cầu thời gian render lâu hơn
         </div>
       </div>
 
       <div className="flex space-x-2">
         <button
-          className={`px-3 py-2 rounded text-sm ${
+          className={`px-4 py-2 rounded text-sm flex items-center ${
             isRendering
               ? "bg-gray-500 cursor-not-allowed"
               : "bg-green-500 hover:bg-green-600"
@@ -625,14 +741,38 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
           onClick={startRender}
           disabled={isRendering}
         >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+              clipRule="evenodd"
+            />
+          </svg>
           {isRendering ? "Đang render..." : "Bắt đầu render"}
         </button>
 
         {isRendering && (
           <button
-            className="px-3 py-2 rounded text-sm bg-blue-500 hover:bg-blue-600 text-white"
+            className="px-4 py-2 rounded text-sm bg-blue-500 hover:bg-blue-600 text-white flex items-center"
             onClick={() => setShowProgressPopup(true)}
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
             Xem tiến trình
           </button>
         )}

@@ -9,6 +9,7 @@ import { KaraokeLineWithStyle, TextStyle } from "../../../types";
 
 export type KaraokeEffectType =
   | "default" // Hiệu ứng mặc định - đổ màu từ trái sang phải
+  | "default_2" // Hiệu ứng mặc định phiên bản 2 - mượt hơn
   | "gradient" // Hiệu ứng gradient
   | "glow" // Hiệu ứng phát sáng
   | "wave" // Hiệu ứng sóng
@@ -65,6 +66,45 @@ export const useKaraokeEffect = ({
           }
           
           .karaoke-completed {
+            width: 100% !important;
+          }
+        `;
+        break;
+
+      case "default_2":
+        styles += `
+          .karaoke-default-2-container {
+            position: relative;
+            overflow: hidden;
+          }
+          
+          .karaoke-default-2-text {
+            position: relative;
+            z-index: 1;
+          }
+          
+          .karaoke-default-2-highlight {
+            position: absolute;
+            left: 0;
+            top: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            z-index: 2;
+          }
+          
+          .karaoke-default-2-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            background: linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0));
+            filter: blur(3px);
+            border-right: 2px solid rgba(255,255,255,0.2);
+            transition: width 100ms cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .karaoke-default-2-completed {
             width: 100% !important;
           }
         `;
@@ -299,6 +339,22 @@ export const useKaraokeEffect = ({
           highlightClassName: `word-${wordKey}-active karaoke-default-highlight ${isCompleted ? "karaoke-completed" : ""}`,
           highlightStyle: {
             width: isCompleted ? "100%" : `${progress * 100}%`,
+          },
+          cssStyles,
+          renderHighlight,
+        };
+
+      case "default_2":
+        renderHighlight = true;
+        return {
+          containerClassName: `${baseContainerClassName} karaoke-default-2-container`,
+          highlightClassName: `word-${wordKey}-active karaoke-default-2-highlight ${isCompleted ? "karaoke-default-2-completed" : ""}`,
+          highlightStyle: {
+            width: isCompleted ? "100%" : `${progress * 100}%`,
+            position: "relative",
+          },
+          containerStyle: {
+            overflow: "visible",
           },
           cssStyles,
           renderHighlight,

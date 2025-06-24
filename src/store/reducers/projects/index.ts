@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { TProject, TProjectCode, TProjectWithKey } from './types';
-import { v4 as uuidv4 } from 'uuid';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { TProject, TProjectCode, TProjectWithKey } from "./types";
+import { v4 as uuidv4 } from "uuid";
 
 interface IProjectsState {
   projects: Record<string, TProject<TProjectWithKey>>;
@@ -9,23 +9,23 @@ interface IProjectsState {
 const initialState: IProjectsState = {
   projects: {
     kra1: {
-      code: 'kra1',
+      code: "kra1",
       width: 1280,
       height: 720,
-      backgroundType: 'video',
-      backgroundSrc: '',
-      backgroundColor: '#000000',
-      audioSrc: '',
+      backgroundType: "video",
+      backgroundSrc: "",
+      backgroundColor: "#000000",
+      audioSrc: "",
       karaokeLines: [],
       fps: 30,
       durationInFrames: 300,
     },
     kra2: {
-      code: 'kra2',
+      code: "kra2",
       width: 1280,
       height: 720,
       element: [],
-      audioSrc: '',
+      audioSrc: "",
       karaokeLines: [],
       fps: 30,
       durationInFrames: 300,
@@ -34,7 +34,7 @@ const initialState: IProjectsState = {
 };
 
 const projectsSlice = createSlice({
-  name: 'projects',
+  name: "projects",
   initialState,
   reducers: {
     setProjects(state, action: PayloadAction<TProject<TProjectWithKey>>) {
@@ -47,31 +47,28 @@ const projectsSlice = createSlice({
         [action.payload.code]: action.payload,
       };
     },
-    createNewProject(
-      state,
-      action: PayloadAction<TProjectCode>
-    ) {
+    createNewProject(state, action: PayloadAction<TProjectCode>) {
       switch (action.payload) {
-        case 'kra1':
+        case "kra1":
           const kra1Project = initialState.projects.kra1;
           const kra1ProjectKey = uuidv4();
           state.projects = {
             ...state.projects,
-            [kra1ProjectKey]: kra1Project
-          }
+            [kra1ProjectKey]: kra1Project,
+          };
           break;
-        case 'kra2':
+        case "kra2":
           const kra2Project = initialState.projects.kra2;
           const kra2ProjectKey = uuidv4();
           state.projects = {
             ...state.projects,
-            [kra2ProjectKey]: kra2Project
-          }
+            [kra2ProjectKey]: kra2Project,
+          };
           break;
         default:
           break;
       }
-    }
+    },
   },
 });
 
