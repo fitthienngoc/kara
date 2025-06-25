@@ -54,7 +54,6 @@ export const VideoEditor: React.FC<
         lines={karaokeLines}
         editable
         setKaraokeLines={setKaraokeLines}
-        effectType="default"
       />
     </AbsoluteFill>
   );

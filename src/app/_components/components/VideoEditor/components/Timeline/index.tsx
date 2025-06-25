@@ -3,6 +3,7 @@ import { KaraokeLine } from "../../constants";
 import useTimeLine from "./hooks";
 import clsx from "clsx";
 import { ControlsTimeline } from "./components";
+import { useAppSelector } from "../../../../../../store/store";
 
 export interface TimelineProps {
   karaokeLines: KaraokeLine[];
@@ -62,7 +63,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     onTimeChange,
     setDurationInFrames,
   });
-
+  const [isTimelineFocused, setIsTimelineFocused] = useState(false);
   const [recording, setRecording] = useState(false);
   const [currentLineIndex, setCurrentLineIndex] = useState<number | null>(null);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -70,6 +71,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   // Thêm state để chỉnh sửa thời lượng video
   const [isEditingDuration, setIsEditingDuration] = useState(false);
   const [customDuration, setCustomDuration] = useState(durationInFrames / fps);
+
+  const activeTab = useAppSelector((state) => state.tabsLyrics.activeTab);
 
   // Hàm xử lý khi thay đổi thời lượng video
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,13 +89,15 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const handleWordTap = () => {
     if (!recording || currentLineIndex === null) return;
+    console.log(currentLineIndex);
 
     setKaraokeLines((prevLines) => {
       const lines = [...prevLines];
       const line = { ...lines[currentLineIndex] };
       const words = [...line.words];
 
-      if (currentWordIndex >= words.length) return prevLines;
+      if (currentWordIndex >= words.length || activeTab !== line.idTab)
+        return prevLines;
 
       const start = Math.round(currentTime * fps); // Thời gian hiện tại của playhead
 
@@ -202,20 +207,27 @@ export const Timeline: React.FC<TimelineProps> = ({
     });
   };
 
+  const handleTimelineFocus = () => {
+    setIsTimelineFocused(true);
+  };
+
+  const handleTimelineBlur = () => {
+    setIsTimelineFocused(false);
+  };
+
   useEffect(() => {
     setCustomDuration(durationInFrames / fps);
   }, [fps]);
 
   // Add to the existing useEffect for keyboard events
   useEffect(() => {
+    if (!isTimelineFocused) return;
     const handler = (e: KeyboardEvent) => {
       if (e.code === "Space") {
-        if (!recording) {
+        if (recording) {
           e.preventDefault();
-          togglePlay();
+          handleWordTap();
         }
-        e.preventDefault();
-        handleWordTap();
       }
 
       // Handle delete key to reset the current line
@@ -251,7 +263,17 @@ export const Timeline: React.FC<TimelineProps> = ({
     currentLineIndex,
     currentTime,
     setKaraokeLines,
+    isTimelineFocused,
+    activeTab,
   ]);
+
+  useEffect(() => {
+    // Reset currentLineIndex and currentWordIndex when activeTab changes
+    setCurrentLineIndex(
+      karaokeLines.findIndex((line) => line.idTab === activeTab),
+    );
+    setCurrentWordIndex(0);
+  }, [activeTab]);
 
   // Số dòng tối đa để hiển thị
   const maxRows = 2;
@@ -316,7 +338,11 @@ export const Timeline: React.FC<TimelineProps> = ({
   const rows = distributeLinesToRows();
 
   return (
-    <div className="mt-2 bg-gray-900 p-2 rounded-lg flex flex-col flex-1">
+    <div
+      className="mt-2 bg-gray-900 p-2 rounded-lg flex flex-col flex-1"
+      onMouseEnter={handleTimelineFocus}
+      onMouseLeave={handleTimelineBlur}
+    >
       {/* Controls */}
       <ControlsTimeline
         isPlaying={isPlaying}

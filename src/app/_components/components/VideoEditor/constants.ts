@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { zColor } from "@remotion/zod-types";
 import { TextStyle } from "./types";
+import { KaraokeEffectType } from "./components/KaraokeSubtitle/hooks/useKaraokeEffect";
 
 // Định nghĩa kiểu dữ liệu cho subtitle karaoke
 export interface KaraokeWord {
@@ -26,6 +27,8 @@ export interface KaraokeLine {
     x: number;
     y: number;
   };
+  effectType: KaraokeEffectType;
+  idTab: string;
 }
 
 // Assuming TextStyle is already defined elsewhere
@@ -55,6 +58,7 @@ const Word = z.object({
   style: TextStyleZ.optional(),
 });
 
+export const ID_TAB_DEFAULT = "S_1"; // Default tab ID
 // Main schema
 const KaraokeLineSchema = z.object({
   startTime: z.number().optional(),
@@ -63,6 +67,18 @@ const KaraokeLineSchema = z.object({
   countDown: z.boolean().optional(),
   style: TextStyleZ.optional(),
   position: Position,
+  effectType: z
+    .enum([
+      "default", // Hiệu ứng mặc định - đổ màu từ trái sang phải
+      "default_2", // Hiệu ứng mặc định phiên bản 2 - mượt hơn
+      "gradient", // Hiệu ứng gradient
+      "glow", // Hiệu ứng phát sáng
+      "wave", // Hiệu ứng sóng
+      "bounce", // Hiệu ứng nảy
+      "3d", // Hiệu ứng 3D
+    ])
+    .default("default"),
+  idTab: z.string().default(ID_TAB_DEFAULT),
 });
 
 // Schema cho VideoEditor
@@ -111,6 +127,8 @@ export const SAMPLE_KARAOKE_LINES: KaraokeLine[] = [
     endTime: 180,
     countDown: false,
     position: DEFAULT_POSITION,
+    effectType: "default",
+    idTab: "",
   },
   {
     words: [
@@ -123,67 +141,11 @@ export const SAMPLE_KARAOKE_LINES: KaraokeLine[] = [
     endTime: 290,
     countDown: false,
     position: DEFAULT_POSITION_EVEN,
+    effectType: "default",
+    idTab: "",
   },
 ];
 
-// Dữ liệu karaoke mẫu cho 60 FPS (thời gian nhân đôi để giữ nguyên thời lượng thực tế)
-// export const SAMPLE_KARAOKE_LINES_60FPS: KaraokeLine[] = [
-//   {
-//     words: [
-//       { word: "Chào", startTime: 60, endTime: 120 },
-//       { word: "mừng", startTime: 120, endTime: 150 },
-//       { word: "đến", startTime: 150, endTime: 180 },
-//       { word: "với", startTime: 180, endTime: 240 },
-//       { word: "Karaoke", startTime: 240, endTime: 300 },
-//       { word: "Editor", startTime: 300, endTime: 360 },
-//     ],
-//     startTime: 60,
-//     endTime: 360,
-//     countDown: false,
-//     position: DEFAULT_POSITION,
-//   },
-//   {
-//     words: [
-//       { word: "Tạo", startTime: 420, endTime: 460 },
-//       { word: "video", startTime: 460, endTime: 500 },
-//       { word: "tuyệt", startTime: 500, endTime: 540 },
-//       { word: "vời", startTime: 540, endTime: 580 },
-//     ],
-//     startTime: 420,
-//     endTime: 580,
-//     countDown: false,
-//     position: DEFAULT_POSITION_EVEN,
-//   },
-// ];
-
-// Cập nhật mẫu karaoke cho 24 FPS (phong cách điện ảnh)
-// export const SAMPLE_KARAOKE_LINES_24FPS: KaraokeLine[] = [
-//   {
-//     words: [
-//       { word: "Phong", startTime: 24, endTime: 48 },
-//       { word: "cách", startTime: 48, endTime: 72 },
-//       { word: "điện", startTime: 72, endTime: 96 },
-//       { word: "ảnh", startTime: 96, endTime: 120 },
-//     ],
-//     startTime: 24,
-//     endTime: 120,
-//     countDown: false,
-//     position: DEFAULT_POSITION,
-//   },
-//   {
-//     words: [
-//       { word: "Video", startTime: 144, endTime: 168 },
-//       { word: "chất", startTime: 168, endTime: 192 },
-//       { word: "lượng", startTime: 192, endTime: 216 },
-//     ],
-//     startTime: 144,
-//     endTime: 216,
-//     countDown: false,
-//     position: DEFAULT_POSITION_EVEN,
-//   },
-// ];
-
-// Hàm tiện ích để điều chỉnh thời gian karaoke theo FPS
 export function adjustKaraokeTimingForFps(
   karaokeLines: KaraokeLine[],
   fromFps: number,
@@ -205,5 +167,7 @@ export function adjustKaraokeTimingForFps(
     endTime: line?.endTime ? Math.round(line?.endTime * ratio) : undefined,
     countDown: line.countDown,
     position: { ...line.position },
+    effectType: line.effectType,
+    idTab: line.idTab,
   }));
 }

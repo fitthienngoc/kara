@@ -11,7 +11,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useDraggable } from "@dnd-kit/core";
 
 import clsx from "clsx";
-import { KaraokeEffectType, useKaraokeEffect } from "./hooks/useKaraokeEffect";
+import { useKaraokeEffect } from "./hooks/useKaraokeEffect";
 import {
   KaraokeLine,
   DEFAULT_INACTIVE_COLOR,
@@ -30,7 +30,6 @@ interface KaraokeSubtitleProps {
   lines: KaraokeLineWithPosition[];
   setKaraokeLines?: React.Dispatch<React.SetStateAction<KaraokeLine[]>>;
   editable?: boolean;
-  effectType?: KaraokeEffectType;
 }
 
 // Component cho dòng karaoke có thể kéo thả
@@ -78,7 +77,6 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
   lines,
   setKaraokeLines,
   editable = false,
-  effectType = "default",
 }) => {
   const frame = useCurrentFrame();
   // Thời gian hiển thị trước (tính bằng frames) - mặc định là 3 giây (90 frames ở 30fps)
@@ -150,7 +148,6 @@ export const KaraokeSubtitle: React.FC<KaraokeSubtitleProps> = ({
 
   // Sử dụng hook hiệu ứng karaoke
   const { cssStyles, getWordStyle } = useKaraokeEffect({
-    effectType,
     frame,
     lines: currentLines as KaraokeLineWithStyle[],
     fps: 30,
