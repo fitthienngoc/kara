@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { KaraokeLine } from "../../constants";
-import useTimeLine from "./hooks";
+import useTimeLine from "./hooks/useTimeLine";
 import clsx from "clsx";
 import { ControlsTimeline } from "./components";
 import { useAppSelector } from "../../../../../../store/store";
+import { useCurrentTiming } from "./hooks/useCurrentTiming";
 
 export interface TimelineProps {
   karaokeLines: KaraokeLine[];
@@ -63,10 +64,17 @@ export const Timeline: React.FC<TimelineProps> = ({
     onTimeChange,
     setDurationInFrames,
   });
+
   const [isTimelineFocused, setIsTimelineFocused] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [currentLineIndex, setCurrentLineIndex] = useState<number | null>(null);
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  // const [currentLineIndex, setCurrentLineIndex] = useState<number | null>(null);
+
+  const {
+    currentLineIndex,
+    setCurrentLineIndex,
+    currentWordIndex,
+    setCurrentWordIndex,
+  } = useCurrentTiming();
 
   // Thêm state để chỉnh sửa thời lượng video
   const [isEditingDuration, setIsEditingDuration] = useState(false);
@@ -89,15 +97,15 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const handleWordTap = () => {
     if (!recording || currentLineIndex === null) return;
-    console.log(currentLineIndex);
 
     setKaraokeLines((prevLines) => {
       const lines = [...prevLines];
       const line = { ...lines[currentLineIndex] };
       const words = [...line.words];
 
-      if (currentWordIndex >= words.length || activeTab !== line.idTab)
+      if (currentWordIndex >= words.length || activeTab !== line.idTab) {
         return prevLines;
+      }
 
       const start = Math.round(currentTime * fps); // Thời gian hiện tại của playhead
 

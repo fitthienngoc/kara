@@ -29,6 +29,7 @@ export interface KaraokeLine {
   };
   effectType: KaraokeEffectType;
   idTab: string;
+  unixId: string;
 }
 
 // Assuming TextStyle is already defined elsewhere
@@ -129,6 +130,7 @@ export const SAMPLE_KARAOKE_LINES: KaraokeLine[] = [
     position: DEFAULT_POSITION,
     effectType: "default",
     idTab: "",
+    unixId: "id1",
   },
   {
     words: [
@@ -143,6 +145,7 @@ export const SAMPLE_KARAOKE_LINES: KaraokeLine[] = [
     position: DEFAULT_POSITION_EVEN,
     effectType: "default",
     idTab: "",
+    unixId: "id2",
   },
 ];
 
@@ -169,5 +172,6 @@ export function adjustKaraokeTimingForFps(
     position: { ...line.position },
     effectType: line.effectType,
     idTab: line.idTab,
+    unixId: line.unixId,
   }));
 }

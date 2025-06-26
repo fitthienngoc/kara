@@ -11,13 +11,14 @@ import {
   DEFAULT_TEXT_STROKE_COLOR,
   ID_TAB_DEFAULT,
   KaraokeLine,
-} from "../constants";
-import { FONT_WEIGHTS } from "../constants/fonts";
-import { KaraokeEffectType } from "../components/KaraokeSubtitle/hooks/useKaraokeEffect";
+} from "../../constants";
+import { FONT_WEIGHTS } from "../../constants/fonts";
+import { KaraokeEffectType } from "../KaraokeSubtitle/hooks/useKaraokeEffect";
 import { v4 as uuidv4 } from "uuid";
-import { useAppDispatch, useAppSelector } from "../../../../../store/store";
-import { TabLyricsActions } from "../../../../../store/reducers/tabsLyrics";
-import DebugJsonPopup from "./DebugJsonPopup";
+import { useAppDispatch, useAppSelector } from "../../../../../../store/store";
+import { TabLyricsActions } from "../../../../../../store/reducers/tabsLyrics";
+import DebugJsonPopup from "../DebugJsonPopup";
+import { useCurrentTiming } from "../Timeline/hooks/useCurrentTiming";
 
 // Định nghĩa TextStyle với tên thuộc tính khớp với style trong KaraokeLineWithStyle
 interface TextStyle {
@@ -82,6 +83,7 @@ interface SubtitleLine {
   countdown: boolean; // Checkbox S
   actor: string;
   content: string;
+  unixId: string;
 }
 
 // Danh sách các hiệu ứng karaoke có sẵn
@@ -139,16 +141,8 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
   // ===========================
   // Tab management logic
   // ===========================
-  // const [tabs, setTabs] = useState<TSubtitleTab[]>([
-  //   {
-  //     id: ID_TAB_DEFAULT,
-  //     name: "Singer 1",
-  //     lines: [],
-  //     lyricsText: "",
-  //     textSettings: { ...initialTextSettings }, // Sử dụng cài đặt mặc định
-  //     effectType: "default", // Hiệu ứng mặc định
-  //   },
-  // ]);
+  const { setCurrentUnixIdActiveLine, setCurrentWordIndex } =
+    useCurrentTiming();
   const tabs = useAppSelector((state) => state.tabsLyrics.tabs.kra1);
 
   const activeTabId = useAppSelector((state) => state.tabsLyrics.activeTab);
@@ -345,6 +339,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
             countdown: false,
             actor: "",
             content: "",
+            unixId: uuidv4(),
           };
 
           return {
@@ -377,11 +372,12 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
     const currentTabIndex = tabs.findIndex((tab) => tab.id === activeTabId);
     if (currentTabIndex !== -1) {
       // Tạo mảng dòng mới
-      const newLines = lines.map((line, index) => ({
+      const newLines: TSubtitleTab["lines"] = lines.map((line, index) => ({
         id: index + 1,
         countdown: activeTab?.lines?.[index]?.countdown || false,
         actor: activeTab?.lines?.[index]?.actor || "",
         content: line.trim(),
+        unixId: activeTab?.lines?.[index]?.unixId || uuidv4(),
       }));
 
       // Cách 1: Sử dụng hàm updater để tạo mảng tabs mới hoàn toàn
@@ -525,11 +521,11 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
                 : DEFAULT_POSITION_EVEN),
             effectType: tab.effectType, // Sử dụng hiệu ứng từ tab
             idTab: tab.id, // Sửa từ activeTabId thành tab.id để giữ thông tin tab đúng
+            unixId: line.unixId || uuidv4(),
           });
         }
       });
     });
-
     return result as KaraokeLine[];
   };
 
@@ -596,6 +592,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
           countdown: line.countDown || false,
           actor: "",
           content: line.words.map((word) => word.word).join(" "),
+          unixId: line.unixId || uuidv4(),
         }));
 
         // Cập nhật lyricsText từ karaokeLines
@@ -921,6 +918,10 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
                   <div
                     key={line.id}
                     className="grid grid-cols-12 border-t border-gray-600 hover:bg-gray-700"
+                    onClick={() => {
+                      setCurrentUnixIdActiveLine(line.unixId);
+                      setCurrentWordIndex(0);
+                    }}
                   >
                     <div className="col-span-1 p-2 border-r border-gray-600 text-center text-gray-400 text-xs">
                       {line.id}

@@ -11,10 +11,15 @@ interface ITabState {
   tabs: {
     [K in TProjectCode]: TSubtitleTab[];
   };
+  currentLineIndex: number | null;
+  currentWordIndex: number;
+  currentUnixIdActiveLine?: string;
 }
 
 const initialState: ITabState = {
   activeTab: ID_TAB_DEFAULT,
+  currentLineIndex: null,
+  currentWordIndex: 0,
   tabs: {
     kra1: [
       {
@@ -43,6 +48,18 @@ const TabsLyricsSlice = createSlice({
     },
     setActiveTab(state, action: PayloadAction<string>) {
       state.activeTab = action.payload;
+    },
+    setCurrentLineIndex(state, action: PayloadAction<number | null>) {
+      state.currentLineIndex = action.payload;
+    },
+    setCurrentWordIndex(state, action: PayloadAction<number>) {
+      state.currentWordIndex = action.payload;
+    },
+    setCurrentUnixIdActiveLine(
+      state,
+      action: PayloadAction<string | undefined>,
+    ) {
+      state.currentUnixIdActiveLine = action.payload;
     },
   },
 });

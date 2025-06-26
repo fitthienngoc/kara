@@ -29,8 +29,6 @@ export type TVideoSetting = {
 };
 
 const VideoEditorApp: React.FC = () => {
-  console.log("✅ VideoEditorApp is mounted");
-
   const projectData = useAppSelector((state) => state.projects.projects.kra1);
   const {
     audioSrc,
