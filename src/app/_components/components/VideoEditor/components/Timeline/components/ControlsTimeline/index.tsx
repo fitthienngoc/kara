@@ -4,9 +4,9 @@ interface ControlsProps {
   isPlaying: boolean;
   togglePlay: () => void;
   currentLineIndex: number | null;
-  setCurrentLineIndex: (index: number) => void;
-  setCurrentWordIndex: (index: number) => void;
+
   recording: boolean;
+  onReady: () => void;
   stopRecording: () => void;
   startRecording: () => void;
   currentTime: number;
@@ -27,8 +27,7 @@ export default function ControlsTimeline({
   isPlaying,
   togglePlay,
   currentLineIndex,
-  setCurrentLineIndex,
-  setCurrentWordIndex,
+  onReady,
   recording,
   stopRecording,
   startRecording,
@@ -93,10 +92,7 @@ export default function ControlsTimeline({
       {currentLineIndex === null ? (
         <button
           className={`px-1 py-0.5 rounded text-[10px] bg-green-600 text-white`}
-          onClick={() => {
-            setCurrentLineIndex(0);
-            setCurrentWordIndex(0);
-          }}
+          onClick={onReady}
         >
           Sẵn sàng
         </button>

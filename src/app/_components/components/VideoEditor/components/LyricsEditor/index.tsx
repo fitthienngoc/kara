@@ -15,10 +15,9 @@ import {
 import { FONT_WEIGHTS } from "../../constants/fonts";
 import { KaraokeEffectType } from "../KaraokeSubtitle/hooks/useKaraokeEffect";
 import { v4 as uuidv4 } from "uuid";
-import { useAppDispatch, useAppSelector } from "../../../../../../store/store";
-import { TabLyricsActions } from "../../../../../../store/reducers/tabsLyrics";
 import DebugJsonPopup from "../DebugJsonPopup";
 import { useCurrentTiming } from "../Timeline/hooks/useCurrentTiming";
+import { useTabs } from "./hooks";
 
 // Định nghĩa TextStyle với tên thuộc tính khớp với style trong KaraokeLineWithStyle
 interface TextStyle {
@@ -143,37 +142,16 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({
   // ===========================
   const { setCurrentUnixIdActiveLine, setCurrentWordIndex } =
     useCurrentTiming();
-  const tabs = useAppSelector((state) => state.tabsLyrics.tabs.kra1);
 
-  const activeTabId = useAppSelector((state) => state.tabsLyrics.activeTab);
+  const { activeTabId, setActiveTabId, tabs, setTabs } = useTabs();
 
   // State để theo dõi tab nào đang được chỉnh sửa tên
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   // State để hiển thị/ẩn phần cài đặt văn bản
   const [showTextSettings, setShowTextSettings] = useState(false);
-  const dispatch = useAppDispatch();
 
   // Thêm state để kiểm soát việc hiển thị popup Debug JSON
   const [showJsonDebug, setShowJsonDebug] = useState(false);
-
-  const setTabs = (
-    tabsUpdater:
-      | TSubtitleTab[]
-      | ((prevTabs: TSubtitleTab[]) => TSubtitleTab[]),
-  ) => {
-    if (typeof tabsUpdater === "function") {
-      // Nếu là hàm updater
-      const newTabs = tabsUpdater(tabs);
-      dispatch(TabLyricsActions.setTab({ code: "kra1", tabs: newTabs }));
-    } else {
-      // Nếu là mảng tabs mới
-      dispatch(TabLyricsActions.setTab({ code: "kra1", tabs: tabsUpdater }));
-    }
-  };
-
-  const setActiveTabId = (tabId: string) => {
-    dispatch(TabLyricsActions.setActiveTab(tabId));
-  };
 
   // Hàm cập nhật tên tab
   const updateTabName = (tabId: string, newName: string) => {

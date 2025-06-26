@@ -3,8 +3,13 @@ import { KaraokeLine } from "../../constants";
 import useTimeLine from "./hooks/useTimeLine";
 import clsx from "clsx";
 import { ControlsTimeline } from "./components";
-import { useAppSelector } from "../../../../../../store/store";
 import { useCurrentTiming } from "./hooks/useCurrentTiming";
+import {
+  getConsistentColorFromString,
+  getLighterColorVariant,
+  getDarkerColorVariant,
+} from "./utils";
+import { useTabs } from "../LyricsEditor/hooks";
 
 export interface TimelineProps {
   karaokeLines: KaraokeLine[];
@@ -23,6 +28,10 @@ interface LinePlacement {
   startPos: number;
   endPos: number;
   width: number;
+  color: string; // Màu cho line block
+  wordColor: string; // Màu cho các từ
+  handleColor: string; // Màu cho handle
+  handleHoverColor: string; // Màu khi hover handle
 }
 
 export const Timeline: React.FC<TimelineProps> = ({
@@ -71,16 +80,16 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const {
     currentLineIndex,
-    setCurrentLineIndex,
     currentWordIndex,
     setCurrentWordIndex,
+    setCurrentUnixIdActiveLine,
   } = useCurrentTiming();
 
   // Thêm state để chỉnh sửa thời lượng video
   const [isEditingDuration, setIsEditingDuration] = useState(false);
   const [customDuration, setCustomDuration] = useState(durationInFrames / fps);
 
-  const activeTab = useAppSelector((state) => state.tabsLyrics.activeTab);
+  const { activeTabId: activeTab, setActiveTabId } = useTabs();
 
   // Hàm xử lý khi thay đổi thời lượng video
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,11 +153,11 @@ export const Timeline: React.FC<TimelineProps> = ({
       if (nextWordIndex >= line.words.length) {
         // Chuyển sang dòng tiếp theo hoặc dừng ghi
         if (currentLineIndex + 1 < karaokeLines.length) {
-          setCurrentLineIndex(currentLineIndex + 1);
+          setCurrentUnixIdActiveLine(karaokeLines[currentLineIndex + 1].unixId);
           setCurrentWordIndex(0);
         } else {
           setRecording(false);
-          setCurrentLineIndex(null);
+          setCurrentUnixIdActiveLine(undefined);
           setCurrentWordIndex(0);
         }
       } else {
@@ -165,7 +174,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const stopRecording = () => {
     setRecording(false);
-    setCurrentLineIndex(null);
+    setCurrentUnixIdActiveLine(undefined);
     setCurrentWordIndex(0);
   };
 
@@ -275,17 +284,10 @@ export const Timeline: React.FC<TimelineProps> = ({
     activeTab,
   ]);
 
-  useEffect(() => {
-    // Reset currentLineIndex and currentWordIndex when activeTab changes
-    setCurrentLineIndex(
-      karaokeLines.findIndex((line) => line.idTab === activeTab),
-    );
-    setCurrentWordIndex(0);
-  }, [activeTab]);
-
   // Số dòng tối đa để hiển thị
   const maxRows = 2;
 
+  // Tính toán phân bổ các dòng karaoke vào các hàng
   // Tính toán phân bổ các dòng karaoke vào các hàng
   const distributeLinesToRows = (): LinePlacement[][] => {
     // Khởi tạo mảng với kiểu dữ liệu cụ thể
@@ -295,10 +297,17 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     karaokeLines.forEach((line, index) => {
       if (!line.startTime || !line.endTime) return;
+
       // Tính toán thời gian bắt đầu và kết thúc để xác định vị trí phù hợp
       const startPos = timeToPosition(frameToTime(line.startTime));
       const endPos = timeToPosition(frameToTime(line.endTime));
       const lineWidth = endPos - startPos;
+
+      // Tạo màu sắc nhất quán dựa trên idTab
+      const baseColor = getConsistentColorFromString(line.idTab);
+      const wordColor = getLighterColorVariant(baseColor);
+      const handleColor = getDarkerColorVariant(wordColor);
+      const handleHoverColor = getLighterColorVariant(handleColor);
 
       // Tìm hàng phù hợp để đặt dòng karaoke
       let targetRow = index % maxRows; // Mặc định phân bổ đều
@@ -331,18 +340,22 @@ export const Timeline: React.FC<TimelineProps> = ({
         }
       }
 
-      // Thêm dòng vào hàng đã chọn với kiểu dữ liệu rõ ràng
+      // Thêm dòng vào hàng đã chọn với kiểu dữ liệu rõ ràng và màu sắc
       rows[targetRow].push({
         line,
         lineIndex: index,
         startPos,
         endPos,
         width: lineWidth,
+        color: baseColor,
+        wordColor: wordColor,
+        handleColor: handleColor,
+        handleHoverColor: handleHoverColor,
       });
     });
+
     return rows;
   };
-
   const rows = distributeLinesToRows();
 
   return (
@@ -356,8 +369,12 @@ export const Timeline: React.FC<TimelineProps> = ({
         isPlaying={isPlaying}
         togglePlay={togglePlay}
         currentLineIndex={currentLineIndex}
-        setCurrentLineIndex={setCurrentLineIndex}
-        setCurrentWordIndex={setCurrentWordIndex}
+        onReady={() => {
+          setCurrentWordIndex(0);
+          setCurrentUnixIdActiveLine(
+            karaokeLines.find((line) => line.idTab === activeTab)?.unixId,
+          );
+        }}
         recording={recording}
         stopRecording={stopRecording}
         startRecording={startRecording}
@@ -461,86 +478,90 @@ export const Timeline: React.FC<TimelineProps> = ({
               key={rowIndex}
               className={"relative h-10 border-b border-gray-700"}
             >
-              {rowLines.map(({ line, lineIndex }) => (
-                <React.Fragment key={lineIndex}>
+              {rowLines.map((placement) => (
+                <React.Fragment key={placement.lineIndex}>
                   {/* Line block */}
-                  {line.startTime && line.endTime && (
+                  {placement.line.startTime && placement.line.endTime && (
                     <div
                       className={clsx(
-                        lineIndex !== currentLineIndex && "opacity-30",
+                        placement.lineIndex !== currentLineIndex &&
+                          "opacity-30",
                       )}
                     >
                       <div
-                        className="absolute h-8 mt-1 bg-blue-800 rounded opacity-70 cursor-move flex items-end justify-center px-0.5 text-[10px] text-white overflow-hidden"
+                        className={`absolute h-8 mt-1 bg-${placement.color} rounded opacity-70 cursor-move flex items-end justify-center px-0.5 text-[10px] text-white overflow-hidden`}
                         style={{
-                          left: timeToPosition(frameToTime(line.startTime)),
-                          width: timeToPosition(
-                            frameToTime(line.endTime - line.startTime),
-                          ),
+                          left: placement.startPos,
+                          width: placement.width,
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
-                          handleMouseDown(e, "line", lineIndex);
+                          handleMouseDown(e, "line", placement.lineIndex);
                         }}
                         onClick={(e) => {
-                          e.stopPropagation(); // Ngăn sự kiện click lan truyền
-                          setCurrentLineIndex(lineIndex);
+                          e.stopPropagation();
+                          setCurrentUnixIdActiveLine(placement.line.unixId);
+                          setActiveTabId(placement.line.idTab);
+                          setCurrentWordIndex(0);
                         }}
                       >
-                        {line.words.map((word) => word.word).join(" ")}
+                        {placement.line.words
+                          .map((word) => word.word)
+                          .join(" ")}
                       </div>
 
                       {/* Line start handle */}
                       <div
-                        className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                        className={`absolute h-8 w-1 mt-1 bg-${placement.handleColor} cursor-ew-resize z-10 hover:bg-${placement.handleHoverColor} transition-colors`}
                         style={{
-                          left: timeToPosition(frameToTime(line.startTime)),
+                          left: placement.startPos,
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           handleMouseDown(
                             e,
                             "line",
-                            lineIndex,
+                            placement.lineIndex,
                             undefined,
                             "start",
                           );
                         }}
-                        onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                        onClick={(e) => e.stopPropagation()}
                       ></div>
 
                       {/* Line end handle */}
                       <div
-                        className="absolute h-8 w-1 mt-1 bg-blue-500 cursor-ew-resize z-10 hover:bg-blue-400 transition-colors"
+                        className={`absolute h-8 w-1 mt-1 bg-${placement.handleColor} cursor-ew-resize z-10 hover:bg-${placement.handleHoverColor} transition-colors`}
                         style={{
-                          left: timeToPosition(frameToTime(line.endTime)),
+                          left: placement.endPos,
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           handleMouseDown(
                             e,
                             "line",
-                            lineIndex,
+                            placement.lineIndex,
                             undefined,
                             "end",
                           );
                         }}
-                        onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                        onClick={(e) => e.stopPropagation()}
                       ></div>
                     </div>
                   )}
+
                   {/* Words */}
-                  {line.words.map(
+                  {placement.line.words.map(
                     (word, wordIndex) =>
                       word.startTime &&
                       word.endTime && (
                         <div
                           key={wordIndex}
                           className={clsx(
-                            lineIndex !== currentLineIndex
+                            placement.lineIndex !== currentLineIndex
                               ? "opacity-30"
                               : "opacity-80",
-                            "absolute h-5 mt-1 bg-green-600 rounded  cursor-move flex items-center justify-center text-[10px] text-white overflow-hidden hover:opacity-100 transition-opacity",
+                            `absolute h-5 mt-1 bg-${placement.wordColor} rounded cursor-move flex items-center justify-center text-[10px] text-white overflow-hidden hover:opacity-100 transition-opacity`,
                           )}
                           style={{
                             left: timeToPosition(frameToTime(word.startTime)),
@@ -550,42 +571,47 @@ export const Timeline: React.FC<TimelineProps> = ({
                           }}
                           onMouseDown={(e) => {
                             e.stopPropagation();
-                            handleMouseDown(e, "word", lineIndex, wordIndex);
+                            handleMouseDown(
+                              e,
+                              "word",
+                              placement.lineIndex,
+                              wordIndex,
+                            );
                           }}
-                          onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {word.word}
 
                           {/* Word start handle */}
                           <div
-                            className="absolute left-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                            className={`absolute left-0 top-0 bottom-0 w-0.5 bg-${placement.handleColor} cursor-ew-resize hover:bg-${placement.handleHoverColor} transition-colors`}
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleMouseDown(
                                 e,
                                 "word",
-                                lineIndex,
+                                placement.lineIndex,
                                 wordIndex,
                                 "start",
                               );
                             }}
-                            onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                            onClick={(e) => e.stopPropagation()}
                           ></div>
 
                           {/* Word end handle */}
                           <div
-                            className="absolute right-0 top-0 bottom-0 w-0.5 bg-green-400 cursor-ew-resize hover:bg-green-300 transition-colors"
+                            className={`absolute right-0 top-0 bottom-0 w-0.5 bg-${placement.handleColor} cursor-ew-resize hover:bg-${placement.handleHoverColor} transition-colors`}
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleMouseDown(
                                 e,
                                 "word",
-                                lineIndex,
+                                placement.lineIndex,
                                 wordIndex,
                                 "end",
                               );
                             }}
-                            onClick={(e) => e.stopPropagation()} // Ngăn sự kiện click lan truyền
+                            onClick={(e) => e.stopPropagation()}
                           ></div>
                         </div>
                       ),
