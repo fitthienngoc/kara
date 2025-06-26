@@ -336,9 +336,8 @@ ipcMain.handle("open-output-folder", async (event, filePath) => {
 
 // Thêm vào main.js
 ipcMain.handle("open-directory", async (event, directoryPath) => {
+  console.log("Opening directory:", directoryPath);
   try {
-    console.log("Opening directory:", directoryPath);
-
     // Kiểm tra xem thư mục có tồn tại không
     if (existsSync(directoryPath)) {
       // Mở thư mục trong trình quản lý tệp mặc định của hệ điều hành
