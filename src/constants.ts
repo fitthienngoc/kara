@@ -74,7 +74,6 @@ const KaraokeLineSchema = z.object({
   effectType: z
     .enum([
       "default", // Hiệu ứng mặc định - đổ màu từ trái sang phải
-      "default_2", // Hiệu ứng mặc định phiên bản 2 - mượt hơn
       "gradient", // Hiệu ứng gradient
       "glow", // Hiệu ứng phát sáng
       "wave", // Hiệu ứng sóng

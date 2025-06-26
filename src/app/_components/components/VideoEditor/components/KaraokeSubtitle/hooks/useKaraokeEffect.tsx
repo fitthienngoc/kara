@@ -9,7 +9,6 @@ import { KaraokeLineWithStyle, TextStyle } from "../../../types";
 
 export type KaraokeEffectType =
   | "default" // Hiệu ứng mặc định - đổ màu từ trái sang phải
-  | "default_2" // Hiệu ứng mặc định phiên bản 2 - mượt hơn
   | "gradient" // Hiệu ứng gradient
   | "glow" // Hiệu ứng phát sáng
   | "wave" // Hiệu ứng sóng
@@ -52,61 +51,27 @@ export const useKaraokeEffect = ({
       }
     `;
 
-    // Thêm style cho tất cả các loại hiệu ứng có thể có
-    // default
+    // Hiệu ứng default: highlight bằng ::after
     styles += `
-      .karaoke-default-highlight {
-        position: absolute;
-        left: 0;
-        top: 0;
-        overflow: hidden;
-        white-space: nowrap;
-        transition: width 33ms linear;
-      }
-      
-      .karaoke-completed {
-        width: 100% !important;
-      }
-    `;
-
-    // default_2
-    styles += `
-      .karaoke-default-2-container {
+      .karaoke-default-effect {
         position: relative;
-        overflow: hidden;
+        color: ${DEFAULT_INACTIVE_COLOR};
+        text-shadow: 0 0 3px rgba(0,0,0,1);
       }
-      
-      .karaoke-default-2-text {
-        position: relative;
-        z-index: 1;
-      }
-      
-      .karaoke-default-2-highlight {
+      .karaoke-default-effect::after {
+        content: attr(data-text);
         position: absolute;
         left: 0;
         top: 0;
+        color: ${DEFAULT_ACTIVE_COLOR};
         overflow: hidden;
+        width: var(--karaoke-progress, 0%);
+        text-shadow: 0 0 3px rgba(255,255,255,1);
+        pointer-events: none;
         white-space: nowrap;
-        z-index: 2;
+        transition: width 0.15s linear; // Thêm dòng này để mượt hơn
       }
-      
-      .karaoke-default-2-progress {
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        width: 0;
-        background: linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0));
-        filter: blur(3px);
-        border-right: 2px solid rgba(255,255,255,0.2);
-        transition: width 100ms cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      .karaoke-default-2-completed {
-        width: 100% !important;
-      }
-    `;
-
+`;
     // gradient
     styles += `
       @keyframes gradient-move {
@@ -329,31 +294,15 @@ export const useKaraokeEffect = ({
     // Tùy chỉnh style dựa trên loại hiệu ứng
     switch (effectType) {
       case "default":
-        renderHighlight = true;
         return {
-          containerClassName: baseContainerClassName,
-          highlightClassName: `word-${wordKey}-active karaoke-default-highlight ${isCompleted ? "karaoke-completed" : ""}`,
-          highlightStyle: {
-            width: isCompleted ? "100%" : `${progress * 100}%`,
-          },
-          cssStyles,
-          renderHighlight,
-        };
-
-      case "default_2":
-        renderHighlight = true;
-        return {
-          containerClassName: `${baseContainerClassName} karaoke-default-2-container`,
-          highlightClassName: `word-${wordKey}-active karaoke-default-2-highlight ${isCompleted ? "karaoke-default-2-completed" : ""}`,
-          highlightStyle: {
-            width: isCompleted ? "100%" : `${progress * 100}%`,
-            position: "relative",
-          },
+          containerClassName: `${baseContainerClassName} karaoke-default-effect`,
           containerStyle: {
-            overflow: "visible",
+            ["--karaoke-progress" as string]: isCompleted
+              ? "100%"
+              : `${progress * 100}%`,
           },
           cssStyles,
-          renderHighlight,
+          renderHighlight: false, // Không cần render highlight span nữa
         };
 
       case "gradient":

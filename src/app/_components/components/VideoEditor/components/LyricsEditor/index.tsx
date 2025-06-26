@@ -73,7 +73,6 @@ interface SubtitleLine {
 // Danh sách các hiệu ứng karaoke có sẵn
 const KARAOKE_EFFECTS: { value: KaraokeEffectType; label: string }[] = [
   { value: "default", label: "Mặc định - Đổ màu từ trái sang phải" },
-  { value: "default_2", label: "Mặc định 2 - Mượt hơn" },
   { value: "gradient", label: "Gradient - Hiệu ứng màu chuyển" },
   { value: "glow", label: "Glow - Hiệu ứng phát sáng" },
   { value: "wave", label: "Wave - Hiệu ứng sóng" },

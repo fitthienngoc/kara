@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { KaraokeLine } from "../../../../../../constants";
 import useTimeLine from "./hooks/useTimeLine";
 import clsx from "clsx";
@@ -73,6 +73,8 @@ export const Timeline: React.FC<TimelineProps> = ({
     onTimeChange,
     setDurationInFrames,
   });
+
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
 
   const [isTimelineFocused, setIsTimelineFocused] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -180,7 +182,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Add the optimizeTiming function
   const optimizeTiming = () => {
-    const padding = 0; // Thời gian đệm thêm (0.2 giây)
+    const padding = -1; // Thời gian đệm thêm (0.2 giây)
 
     setKaraokeLines((prevLines) => {
       return prevLines.map((line) => {
@@ -283,6 +285,32 @@ export const Timeline: React.FC<TimelineProps> = ({
     isTimelineFocused,
     activeTab,
   ]);
+
+  // Auto-scroll timeline khi playhead di chuyển
+  useEffect(() => {
+    if (!isPlaying || !timelineScrollRef.current) return;
+
+    const scrollContainer = timelineScrollRef.current;
+    const playheadPos = timeToPosition(currentTime);
+
+    // Lấy kích thước vùng nhìn thấy
+    const visibleLeft = scrollContainer.scrollLeft;
+    const visibleRight = visibleLeft + scrollContainer.clientWidth;
+
+    // Nếu playhead ra ngoài vùng nhìn thấy thì cuộn lại
+    const margin = 80; // khoảng cách lề để playhead không sát mép
+    if (playheadPos < visibleLeft + margin) {
+      scrollContainer.scrollTo({
+        left: Math.max(playheadPos - margin, 0),
+        behavior: "smooth",
+      });
+    } else if (playheadPos > visibleRight - margin) {
+      scrollContainer.scrollTo({
+        left: playheadPos - scrollContainer.clientWidth + margin,
+        behavior: "smooth",
+      });
+    }
+  }, [currentTime, isPlaying, timeToPosition]);
 
   // Số dòng tối đa để hiển thị
   const maxRows = 2;
@@ -401,6 +429,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
       {/* Timeline container */}
       <div
+        ref={timelineScrollRef}
         className="relative overflow-x-auto"
         style={{ height: maxRows * 30 + 80 }} // Chiều cao cố định dựa trên số dòng tối đa, giảm từ 120 xuống 80
       >
