@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
-  DEFAULT_ACTIVE_COLOR,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
-  DEFAULT_FONT_WEIGHT,
-  DEFAULT_INACTIVE_COLOR,
   DEFAULT_POSITION,
   DEFAULT_POSITION_EVEN,
-  DEFAULT_TEXT_STROKE,
-  DEFAULT_TEXT_STROKE_COLOR,
+  DEFAULT_TEXT_SETTING,
   ID_TAB_DEFAULT,
   KaraokeLine,
-} from "../../constants";
+} from "../../../../../../constants";
 import { FONT_WEIGHTS } from "../../constants/fonts";
 import { KaraokeEffectType } from "../KaraokeSubtitle/hooks/useKaraokeEffect";
 import { v4 as uuidv4 } from "uuid";
@@ -58,15 +52,6 @@ interface TextSettings {
   textStroke: string;
   textStrokeColor: string;
 }
-export const DEFAULT_TEXT_SETTING: TextSettings = {
-  activeWordColor: DEFAULT_ACTIVE_COLOR,
-  inactiveWordColor: DEFAULT_INACTIVE_COLOR,
-  fontFamily: DEFAULT_FONT_FAMILY,
-  fontSize: DEFAULT_FONT_SIZE,
-  fontWeight: DEFAULT_FONT_WEIGHT,
-  textStroke: DEFAULT_TEXT_STROKE,
-  textStrokeColor: DEFAULT_TEXT_STROKE_COLOR,
-};
 
 export interface TSubtitleTab {
   id: string;

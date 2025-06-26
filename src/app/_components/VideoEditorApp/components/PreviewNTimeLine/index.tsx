@@ -1,6 +1,6 @@
 import { PlayerRef, Player } from "@remotion/player";
 import { Timeline } from "../../../components/VideoEditor/components/Timeline";
-import { KaraokeLine } from "../../../components/VideoEditor/constants";
+import { KaraokeLine } from "../../../../../constants";
 import { VideoEditor } from "../../../components/VideoEditor/VideoEditor";
 import { TVideoSetting } from "../..";
 import { useState, useEffect, useCallback } from "react";

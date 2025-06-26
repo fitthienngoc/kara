@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { PlayerRef } from "@remotion/player";
-import { DEFAULT_FPS, KaraokeLine } from "../components/VideoEditor/constants";
+import { DEFAULT_FPS, KaraokeLine } from "../../../constants";
 import { BackgroundSettings } from "../components/VideoEditor/components/BackgroundSettings";
 import { AudioSettings } from "../components/VideoEditor/components/AudioSettings";
 import { VideoSettings } from "../components/VideoEditor/components/VideoSettings";

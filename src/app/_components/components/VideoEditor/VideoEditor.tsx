@@ -3,7 +3,7 @@ import { AbsoluteFill, useVideoConfig } from "remotion";
 import { Background } from "./Background";
 import { AudioTrack } from "./AudioTrack";
 import { KaraokeSubtitle } from "./components";
-import { KaraokeLine, videoEditorSchema } from "./constants";
+import { KaraokeLine, videoEditorSchema } from "../../../../constants";
 import { z } from "zod";
 
 // Component chính cho trình edit video

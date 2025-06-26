@@ -4,7 +4,7 @@ import {
   DEFAULT_INACTIVE_COLOR,
   DEFAULT_TEXT_STROKE,
   DEFAULT_TEXT_STROKE_COLOR,
-} from "../../../constants";
+} from "../../../../../../../constants";
 import { KaraokeLineWithStyle, TextStyle } from "../../../types";
 
 export type KaraokeEffectType =

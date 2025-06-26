@@ -1,4 +1,4 @@
-import { KaraokeLine } from "../../../../app/_components/components/VideoEditor/constants";
+import { KaraokeLine } from "../../../../constants";
 
 export type TProjectCode = "kra1" | "kra2";
 

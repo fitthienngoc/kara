@@ -6,7 +6,7 @@ import { loadAllFonts } from "../app/_components/components/VideoEditor/utils/fo
 import {
   DEFAULT_FPS,
   SAMPLE_KARAOKE_LINES,
-} from "../app/_components/components/VideoEditor/constants";
+} from "../constants";
 import { VideoEditor } from "../app/_components/components/VideoEditor/VideoEditor";
 
 // Component chuyên dụng để tải font

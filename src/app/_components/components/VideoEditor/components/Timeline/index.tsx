@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { KaraokeLine } from "../../constants";
+import { KaraokeLine } from "../../../../../../constants";
 import useTimeLine from "./hooks/useTimeLine";
 import clsx from "clsx";
 import { ControlsTimeline } from "./components";

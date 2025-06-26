@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TSubtitleTab } from "../LyricsEditor";
-import { KaraokeLine } from "../../constants";
+import { KaraokeLine } from "../../../../../../constants";
 
 const DebugJsonPopup = ({
   tabs,

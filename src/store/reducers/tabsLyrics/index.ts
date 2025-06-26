@@ -1,10 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { TProjectCode } from "../projects/types";
-import {
-  DEFAULT_TEXT_SETTING,
-  TSubtitleTab,
-} from "../../../app/_components/components/VideoEditor/components/LyricsEditor";
-import { ID_TAB_DEFAULT } from "../../../app/_components/components/VideoEditor/constants";
+import { TSubtitleTab } from "../../../app/_components/components/VideoEditor/components/LyricsEditor";
+import { DEFAULT_TEXT_SETTING, ID_TAB_DEFAULT } from "../../../constants";
 
 interface ITabState {
   activeTab: string;
@@ -33,7 +30,7 @@ const initialState: ITabState = {
   },
 };
 
-const TabsLyricsSlice = createSlice({
+const tabsLyricsSlice = createSlice({
   name: "Tab",
   initialState,
   reducers: {
@@ -59,6 +56,6 @@ const TabsLyricsSlice = createSlice({
   },
 });
 
-export const TabLyricsActions = TabsLyricsSlice.actions;
+export const TabLyricsActions = tabsLyricsSlice.actions;
 
-export default TabsLyricsSlice.reducer;
+export default tabsLyricsSlice.reducer;

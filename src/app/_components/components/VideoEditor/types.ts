@@ -1,4 +1,4 @@
-import { KaraokeLine } from "./constants";
+import { KaraokeLine } from "../../../../constants";
 
 // Định nghĩa cấu trúc style cho text
 export interface TextStyle {

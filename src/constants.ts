@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { zColor } from "@remotion/zod-types";
-import { TextStyle } from "./types";
-import { KaraokeEffectType } from "./components/KaraokeSubtitle/hooks/useKaraokeEffect";
+import {
+  TextSettings,
+  TextStyle,
+} from "./app/_components/components/VideoEditor/types";
+import { KaraokeEffectType } from "./app/_components/components/VideoEditor/components/KaraokeSubtitle/hooks/useKaraokeEffect";
 
 // Định nghĩa kiểu dữ liệu cho subtitle karaoke
 export interface KaraokeWord {
@@ -176,3 +179,13 @@ export function adjustKaraokeTimingForFps(
     unixId: line.unixId,
   }));
 }
+
+export const DEFAULT_TEXT_SETTING: TextSettings = {
+  activeWordColor: DEFAULT_ACTIVE_COLOR,
+  inactiveWordColor: DEFAULT_INACTIVE_COLOR,
+  fontFamily: DEFAULT_FONT_FAMILY,
+  fontSize: DEFAULT_FONT_SIZE,
+  fontWeight: DEFAULT_FONT_WEIGHT,
+  textStroke: DEFAULT_TEXT_STROKE,
+  textStrokeColor: DEFAULT_TEXT_STROKE_COLOR,
+};

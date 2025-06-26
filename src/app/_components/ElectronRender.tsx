@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { isDev } from "../../../types/constants";
-import { KaraokeLine } from "./components/VideoEditor/constants";
+import { KaraokeLine } from "../../constants";
 import { TVideoSetting } from "./VideoEditorApp";
 
 // Kiểm tra xem có đang chạy trong Electron không
