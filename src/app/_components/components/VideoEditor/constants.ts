@@ -80,6 +80,7 @@ const KaraokeLineSchema = z.object({
     ])
     .default("default"),
   idTab: z.string().default(ID_TAB_DEFAULT),
+  unixId: z.string().default(() => crypto.randomUUID()),
 });
 
 // Schema cho VideoEditor
