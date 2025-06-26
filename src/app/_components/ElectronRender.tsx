@@ -349,8 +349,18 @@ export const ElectronRender: React.FC<ElectronRenderProps> = ({
         return;
       }
 
-      // Lấy đường dẫn thư mục từ đường dẫn file
-      const directory = outputPath.substring(0, outputPath.lastIndexOf("/"));
+      // Xử lý đường dẫn thư mục phù hợp với cả Windows và macOS
+      let directory;
+      if (outputPath.includes("/")) {
+        // macOS hoặc Linux style path
+        directory = outputPath.substring(0, outputPath.lastIndexOf("/"));
+      } else if (outputPath.includes("\\")) {
+        // Windows style path
+        directory = outputPath.substring(0, outputPath.lastIndexOf("\\"));
+      } else {
+        // Trường hợp chỉ có tên file không có đường dẫn
+        directory = ".";
+      }
 
       // Gọi đến main process để mở thư mục (không chọn file)
       await ipc.invoke("open-directory", directory);
