@@ -55,7 +55,7 @@ export const useKaraokeEffect = ({
     styles += `
       .karaoke-default-effect {
         position: relative;
-        color: ${DEFAULT_INACTIVE_COLOR};
+        color: var(--karaoke-inactive-color, ${DEFAULT_INACTIVE_COLOR});
         text-shadow: 0 0 3px rgba(0,0,0,1);
       }
       .karaoke-default-effect::after {
@@ -63,15 +63,15 @@ export const useKaraokeEffect = ({
         position: absolute;
         left: 0;
         top: 0;
-        color: ${DEFAULT_ACTIVE_COLOR};
+        color: var(--karaoke-active-color, ${DEFAULT_ACTIVE_COLOR});
         overflow: hidden;
         width: var(--karaoke-progress, 0%);
         text-shadow: 0 0 3px rgba(255,255,255,1);
         pointer-events: none;
         white-space: nowrap;
-        transition: width 0.15s linear; // Thêm dòng này để mượt hơn
+        transition: width 0.15s linear;
       }
-`;
+    `;
     // gradient
     styles += `
       @keyframes gradient-move {
@@ -256,6 +256,10 @@ export const useKaraokeEffect = ({
     // Sử dụng style của từ/dòng nếu có, nếu không sử dụng giá trị mặc định
     const activeColor =
       wordStyle.activeColor || lineStyle.activeColor || DEFAULT_ACTIVE_COLOR;
+    const inactiveColor =
+      wordStyle.inactiveColor ||
+      lineStyle.inactiveColor ||
+      DEFAULT_INACTIVE_COLOR;
 
     const wordKey = `line${lineIndex}-word${wordIndex}`;
 
@@ -300,9 +304,11 @@ export const useKaraokeEffect = ({
             ["--karaoke-progress" as string]: isCompleted
               ? "100%"
               : `${progress * 100}%`,
+            ["--karaoke-active-color" as string]: activeColor,
+            ["--karaoke-inactive-color" as string]: inactiveColor,
           },
           cssStyles,
-          renderHighlight: false, // Không cần render highlight span nữa
+          renderHighlight: false,
         };
 
       case "gradient":
