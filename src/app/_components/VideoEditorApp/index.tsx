@@ -13,8 +13,8 @@ import {
 } from "../components/VideoEditor/constants/fonts";
 
 import { saveAs } from "file-saver";
-import { ElectronRender } from "../ElectronRender";
-import { PreviewNTimeLine } from "./components";
+
+import { PreviewNTimeLine, WebRenderer } from "./components";
 import { useAppDispatch, useAppSelector } from "../../../store/store";
 import {
   TKra1,
@@ -336,7 +336,7 @@ const VideoEditorApp: React.FC = () => {
                 // durationInFrames={durationInFrames}
                 // setDurationInFrames={setDurationInFrames}
               />
-              <ElectronRender
+              <WebRenderer
                 saveSettings={saveSettings}
                 videoSettings={{
                   backgroundType,

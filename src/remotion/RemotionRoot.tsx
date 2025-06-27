@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { loadAllFonts } from "../app/_components/components/VideoEditor/utils/fontLoader";
 import {
   DEFAULT_FPS,
+  ID_KARAOKE_VIDEO_EDITOR,
   SAMPLE_KARAOKE_LINES,
 } from "../constants";
 import { VideoEditor } from "../app/_components/components/VideoEditor/VideoEditor";
@@ -18,7 +19,6 @@ const FontLoader = () => {
 };
 
 // Mỗi <Composition> là một mục trong sidebar!
-export const ID_KARAOKE_VIDEO_EDITOR = "KaraokeVideoEditor";
 
 const RemotionRoot = ({
   durationInFrames,

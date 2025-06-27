@@ -6,6 +6,7 @@ import {
 } from "./app/_components/components/VideoEditor/types";
 import { KaraokeEffectType } from "./app/_components/components/VideoEditor/components/KaraokeSubtitle/hooks/useKaraokeEffect";
 
+export const ID_KARAOKE_VIDEO_EDITOR = "KaraokeVideoEditor";
 // Định nghĩa kiểu dữ liệu cho subtitle karaoke
 export interface KaraokeWord {
   word: string;

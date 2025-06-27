@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { AbsoluteFill, useVideoConfig } from "remotion";
 import { Background } from "./Background";

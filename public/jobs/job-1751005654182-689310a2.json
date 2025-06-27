@@ -1,0 +1,11 @@
+{
+  "jobId": "job-1751005654182-689310a2",
+  "status": "failed",
+  "progress": 0,
+  "error": "Tried to serve the Webpack bundle on a HTTP server, but the file /Users/titwoen/Desktop/Dev/Kara/kratest1/src/remotion/index.html does not exist. Is this a valid path to a Webpack bundle?",
+  "updatedAt": "2025-06-27T06:27:34.462Z",
+  "logs": [
+    "[1:27:34 PM] processing: 0%",
+    "[1:27:34 PM] failed: 0%"
+  ]
+}

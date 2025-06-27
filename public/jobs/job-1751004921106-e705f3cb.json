@@ -1,0 +1,11 @@
+{
+  "jobId": "job-1751004921106-e705f3cb",
+  "status": "failed",
+  "progress": 0,
+  "error": "bufferUtil.mask is not a function",
+  "updatedAt": "2025-06-27T06:15:21.597Z",
+  "logs": [
+    "[1:15:21 PM] processing: 0%",
+    "[1:15:21 PM] failed: 0%"
+  ]
+}
