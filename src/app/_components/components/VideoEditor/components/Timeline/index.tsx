@@ -182,7 +182,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Add the optimizeTiming function
   const optimizeTiming = () => {
-    const padding = -1; // Thời gian đệm thêm (0.2 giây)
+    const padding = -3; // Thời gian đệm thêm (0.2 giây)
 
     setKaraokeLines((prevLines) => {
       return prevLines.map((line) => {

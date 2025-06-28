@@ -51,25 +51,20 @@ export const useKaraokeEffect = ({
       }
     `;
 
-    // Hiệu ứng default: highlight bằng ::after
+    // Thêm style cho tất cả các loại hiệu ứng có thể có
+    // default
     styles += `
-      .karaoke-default-effect {
-        position: relative;
-        color: var(--karaoke-inactive-color, ${DEFAULT_INACTIVE_COLOR});
-        text-shadow: 0 0 3px rgba(0,0,0,1);
-      }
-      .karaoke-default-effect::after {
-        content: attr(data-text);
+      .karaoke-default-highlight {
         position: absolute;
         left: 0;
         top: 0;
-        color: var(--karaoke-active-color, ${DEFAULT_ACTIVE_COLOR});
         overflow: hidden;
-        width: var(--karaoke-progress, 0%);
-        text-shadow: 0 0 3px rgba(255,255,255,1);
-        pointer-events: none;
         white-space: nowrap;
-        transition: width 0.15s linear;
+        transition: width 33ms linear;
+      }
+      
+      .karaoke-completed {
+        width: 100% !important;
       }
     `;
     // gradient
@@ -256,10 +251,6 @@ export const useKaraokeEffect = ({
     // Sử dụng style của từ/dòng nếu có, nếu không sử dụng giá trị mặc định
     const activeColor =
       wordStyle.activeColor || lineStyle.activeColor || DEFAULT_ACTIVE_COLOR;
-    const inactiveColor =
-      wordStyle.inactiveColor ||
-      lineStyle.inactiveColor ||
-      DEFAULT_INACTIVE_COLOR;
 
     const wordKey = `line${lineIndex}-word${wordIndex}`;
 
@@ -298,17 +289,15 @@ export const useKaraokeEffect = ({
     // Tùy chỉnh style dựa trên loại hiệu ứng
     switch (effectType) {
       case "default":
+        renderHighlight = true;
         return {
-          containerClassName: `${baseContainerClassName} karaoke-default-effect`,
-          containerStyle: {
-            ["--karaoke-progress" as string]: isCompleted
-              ? "100%"
-              : `${progress * 100}%`,
-            ["--karaoke-active-color" as string]: activeColor,
-            ["--karaoke-inactive-color" as string]: inactiveColor,
+          containerClassName: baseContainerClassName,
+          highlightClassName: `word-${wordKey}-active karaoke-default-highlight ${isCompleted ? "karaoke-completed" : ""}`,
+          highlightStyle: {
+            width: isCompleted ? "100%" : `${progress * 100}%`,
           },
           cssStyles,
-          renderHighlight: false,
+          renderHighlight,
         };
 
       case "gradient":

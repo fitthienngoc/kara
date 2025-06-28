@@ -131,26 +131,50 @@ ipcMain.on("render-video", async (event, options) => {
       return;
     }
 
-   
-    const publicDir = join(app.getPath("userData"), "public");
-    if (!existsSync(publicDir)) {
-      event.sender.send("Creating public directory:", publicDir);
-      mkdirSync(publicDir, { recursive: true });
-    }
+    // try {
+    // const publicDir = join(app.getPath("userData"), "public");
+    // if (!existsSync(publicDir)) {
+    //   event.sender.send("Creating public directory:", publicDir);
+    //   mkdirSync(publicDir, { recursive: true });
+    // }
 
-    const audioDir = join(publicDir, "audio");
-    if (!existsSync(audioDir)) {
-      mkdirSync(audioDir, { recursive: true });
-    }
-    
+    // const audioDir = join(publicDir, "audio");
+    // if (!existsSync(audioDir)) {
+    //   mkdirSync(audioDir, { recursive: true });
+    // }
 
     const uniqueAudioFileName = `audio-${Date.now()}-${audioFileName}`;
-    const audioPath = join(audioDir, uniqueAudioFileName);
- 
+    // audioPath = join(audioDir, uniqueAudioFileName);
+
+    // event.sender.send("Writing audio file to:", audioPath);
+    // writeFileSync(audioPath, Buffer.from(audioFile));
+
+    // if (existsSync(audioPath)) {
+    //   const stats = statSync(audioPath);
+    //   // Trả về đường dẫn thực tế cho renderer
+    //   event.sender.send(
+    //     "render-log",
+    //     `Saved audio to: ${audioPath} - Size: ${stats.size} bytes`,
+    //   );
+    // } else {
+    //   event.sender.send("Failed to create audio file!", audioPath);
+    //   throw new Error("Failed to create audio file!");
+    // }
+
+    // event.sender.send("render-log", `Saved audio to: ${audioPath}`);
+
+    // const audioSrc = `file://${audioPath.replace(/\\/g, "/")}`;
+
+    const publicAudioDir = path.join(__dirname, "public", "audio");
+    if (!existsSync(publicAudioDir)) {
+      mkdirSync(publicAudioDir, { recursive: true });
+    }
+
+    const audioFilePath = path.join(publicAudioDir, uniqueAudioFileName);
+    writeFileSync(audioFilePath, Buffer.from(audioFile));
 
     // Truyền path tương đối vào props
-    
-    const audioSrc = `/audio/${path.basename(audioPath)}`;
+    const audioSrc = `audio/${uniqueAudioFileName}`;
 
     const settingsWithAudio = {
       ...videoSettings,
