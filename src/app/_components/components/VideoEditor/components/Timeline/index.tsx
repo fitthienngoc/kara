@@ -399,9 +399,11 @@ export const Timeline: React.FC<TimelineProps> = ({
         currentLineIndex={currentLineIndex}
         onReady={() => {
           setCurrentWordIndex(0);
-          setCurrentUnixIdActiveLine(
-            karaokeLines.find((line) => line.idTab === activeTab)?.unixId,
-          );
+          if (currentLineIndex !== null) {
+            setCurrentUnixIdActiveLine(
+              karaokeLines.find((line) => line.idTab === activeTab)?.unixId,
+            );
+          }
         }}
         recording={recording}
         stopRecording={stopRecording}
